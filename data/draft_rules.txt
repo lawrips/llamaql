@@ -1,0 +1,53 @@
+The league consists of 10 teams and follows an auction draft format.
+
+What Is an Auction Draft in Fantasy Football?
+
+An auction draft operates similarly to a real life auction (shocking). But instead of bidding with real money on items like cars, antiques or baseball cards, you bid with fictitious money on players for your fantasy football team. When you have the highest bid on a player, he joins your fantasy squad.
+
+Auctions take the place of a snake draft, so when the auction is finished, every fantasy manager will have a complete roster of players. However, instead of a preset order for when each team will draft a player, auction drafts have a preset order for who plays the role of auctioneer — which we’ll explain further in the section below.
+
+How Does an Auction Draft Work?
+
+In a snake draft, there is only one action being taken per draft position. When it’s your turn in the order, you simply draft the player you want on your team. In an auction draft, there are two phases for each draft position: nomination and bidding. 
+
+Player Nomination Process
+Following the draft order, fantasy managers take turns nominating players — think of this as playing the role of auctioneer. When it’s your turn, you nominate any player who is not currently on anyone’s fantasy team by placing an initial bid on that player, and then the bidding phase commences. Every fantasy manager is eligible to bid on any nominated player as long as they have enough money to afford the bid. 
+
+Typically, 30 seconds is the default time allotted for each player nomination. However, platforms like Sleeper let you customize this number, going as high as eight or 24 hours to allow for slow drafts.
+While the best players always go earliest in a snake draft, that’s not necessarily true with an auction draft. Christian McCaffrey could get nominated 1st, 23rd or 57th.
+
+Player Bidding Process
+Bids are made in increments of at least $1 once a player has been nominated. Because every fantasy manager is able to bid on any player, you’re not confined to your draft slot like in a snake draft.
+
+Just as with the nomination phase, a 30-second timer is the standard default for the bidding phase. However, when the timer dips below 10 seconds, all new bids reset it to 10 seconds. In other words, you’ll only have 10 seconds to decide if you want to outbid the current highest bidder. You can always customize the bidding timer lengths on Sleeper.
+
+When the timer expires, the manager with the highest bid wins the auction and adds that player to their fantasy team.
+
+Player Budget
+Every fantasy manager starts with a fixed budget, $200, to spend on players. If you bid $30 on CeeDee Lamb (and win), then you’ll have $170 to fill out the remainder of your roster.
+
+Tips for Winning an Auction Draft 
+Devise a Methodical Nomination Strategy
+The order in which you nominate players can be an art form in itself. Early on, nominate players you aren’t interested in drafting yourself, encouraging another manager to burn a large chunk of their budget. Save your favorite sleepers for later in the draft when other managers have less money to spend.
+
+You can also play into people’s fandom. If a Cincinnati Bengals fan has a large remaining budget, nominate Ja’Marr Chase or Joe Burrow to get them to start spending their money.
+
+Master the Bidding Process
+In most cases, it’s wise to increase bids by small increments — usually $1 at a time. For example, if you misread the room and aggressively place a $32 bid when a player’s current price is at $5, you might end up paying $32 for a player who would have gone for only $14.
+
+Be aware of each player’s average bid value, the typical amount they’re going for in other auction drafts (with the same scoring system as your league). If Christian McCaffrey usually goes for $55 in a $200 auction league — and the bidding reaches $95 — let the other fantasy manager have him. Don’t get too fixated and overreach on any single player. Instead, try to stay close to (or under) average player values.
+
+Bid on Good Players
+Many new auction drafters will be too cautious of overspending their budget, and they’ll end the auction draft with $45 remaining and a slew of mediocre players filling out their starting roster.
+
+To avoid this common mistake, try to win three to five players who would go in the first four rounds of a snake draft. A rule of thumb is to allocate between 60% and 75% of your budget on those three to five key players. There’s no prize for having money leftover when the auction ends, and a starting WR room with Courtland Sutton and Tyler Lockett is rough, even if you got them both for well under average value.
+
+Don’t Get Caught at the End of a Tier
+Desperation is never the answer in an auction draft. If you need a starting quarterback and think there are three viable options remaining, don’t wait until only one is left before you bid. You’ll feel pressure to win that player, and other managers will know it. The shrewd ones will bid the price up on that last QB, knowing you have no choice but to pay it.
+
+Auction Draft FAQ
+How long do auction drafts typically last?
+Auction drafts generally take two to four hours to complete, assuming 30-second timers for the nomination and bidding phases.
+
+How should you budget for an auction draft?
+Plan to spend at least 60% but no more than 75% of your budget on three to five star players to ensure your roster has a solid nucleus of strong performers. Think of a star player as one who would get drafted in the first four rounds of a typical snake draft. Save the rest of your budget on sleepers and young players. Try to avoid spending more than $5 on any player you expect to spend the first few weeks of the season on your fantasy bench.

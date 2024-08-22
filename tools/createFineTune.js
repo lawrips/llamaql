@@ -1,42 +1,59 @@
 const { MongoClient } = require('mongodb');
 const { instructions } = require('../lib/constants/instructions');
+const fs = require('fs');
+const filePath = './data/finetuneoutput.jsonl';
 
-async function queryMongo() {
-    const url = 'mongodb://admin:password@localhost:27017';
-    const dbName = 'ffai'; // Database name
-    const collectionName = 'example_queries'; // Collection name
 
-    // Create a new MongoClient
-    const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+module.exports = {
+    exportJson: async function () {
+        const url = 'mongodb://admin:password@localhost:27017';
+        const dbName = 'ffai'; // Database name
+        const collectionName = 'example_queries'; // Collection name
 
-    try {
-        // Connect to the MongoDB server
-        await client.connect();
+        // Create a new MongoClient
+        const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+        let json = '';
 
-        const db = client.db(dbName);
-        const collection = db.collection(collectionName);
+        try {
+            // Connect to the MongoDB server
+            await client.connect();
 
-        // Query all documents
-        const documents = await collection.find({}).toArray();
+            const db = client.db(dbName);
+            const collection = db.collection(collectionName);
 
-        // Convert each document to JSONL format
-        documents.forEach(doc => {
-            // Escape double quotes inside JSON content
-            doc.messages.unshift({"role": "system", "content": instructions});
-            const escapedContent = JSON.stringify(doc.messages).replaceAll("\\n","")//.replace(/"/g, '\\"');
+            // Query all documents
+            const documents = await collection.find({}).toArray();
 
-            // Format JSONL output
-            const jsonlLine = `{"messages": ${escapedContent}}`;
+            // Convert each document to JSONL format
+            documents.forEach(doc => {
+                // Escape double quotes inside JSON content
+                doc.messages.unshift({ "role": "system", "content": instructions });
+                const escapedContent = JSON.stringify(doc.messages).replaceAll("\\n", "")//.replace(/"/g, '\\"');
 
-            // Print JSONL line
-            console.log(jsonlLine);
-        });
-    } catch (err) {
-        console.error('Error connecting to the database', err);
-    } finally {
-        // Close the connection
-        await client.close();
+                // Format JSONL output
+                let jsonlLine = `{"messages": ${escapedContent}}`;
+
+                // Print JSONL line
+                json = json + jsonlLine + '\n';
+            });
+        } catch (err) {
+            console.error('Error connecting to the database', err);
+        } finally {
+            // Close the connection
+            await client.close();
+            console.log(json);
+
+            fs.writeFile(filePath, json, (err) => {
+                if (err) {
+                  console.error('Error writing to file:', err);
+                } else {
+                  console.log('File written successfully!');
+                }
+              });
+
+            return json;
+        }
     }
 }
 
-queryMongo().catch(console.error);
+module.exports.exportJson().catch(console.error);

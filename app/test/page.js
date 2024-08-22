@@ -112,6 +112,16 @@ export default function Home() {
     alert('Chat result saved!');
   };
 
+  const handleExportJsonl = async () => {
+    await fetch('/api/export-json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    alert('Export done!');
+  };
+
   // Function to be called when an option is selected from the dropdown
   const handleOptionSelect = (event) => {
     console.log('Option selected:', event.target.value);
@@ -178,8 +188,9 @@ export default function Home() {
       </div>
 
       <div>
-        <button onClick={handleSaveQuery} style={{ marginRight: '10px' }}>Save Query</button>
-        <button onClick={handleSaveData}>Save Data</button>
+        <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
+        <button onClick={handleSaveData} style={{ marginRight: '10px', marginTop: '10px' }}>Save Data</button>
+        <button onClick={handleExportJsonl} style={{ marginRight: '10px', marginTop: '10px'}}>Export training set (JSONL)</button>
       </div>
 
       {/* Overlay spinner */}

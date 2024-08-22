@@ -3,16 +3,29 @@ const { MongoClient } = require('mongodb');
 const rag = require('../../../lib/rag/rag');
 
 export async function POST(request) {
-    const { input } = await request.json();
-    const query = await rag.query(input)
+  const { input } = await request.json();
+  const { searchParams } = new URL(request.url);
+  const model = searchParams.get('model');
+
+  const query = await rag.query(input, model)
+  if (query.err == null) {
     return new Response(
-        JSON.stringify(
+      JSON.stringify(
         {
-            query: JSON.stringify(query.query),
-            data: JSON.stringify(query.data),
+          query: JSON.stringify(query.query),
+          data: JSON.stringify(query.data),
         }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
+  } else {
+
+
+    console.log(query.err);
+    return new Response(JSON.stringify({ query: JSON.stringify(query.query), error: "bad query - the db didnt like the form of that" }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      }) 
   }
-  
+}

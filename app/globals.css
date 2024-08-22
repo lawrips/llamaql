@@ -31,7 +31,13 @@ body {
   margin: 0;
   padding: 0;
 }
+select {
+  color: black; /* Ensure text color is black when typing */
+  border: 1px solid rgba(var(--foreground-rgb), 0.1);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
 
+}
 input[type="text"],
 textarea {
   background-color: white;

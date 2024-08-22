@@ -9,6 +9,7 @@ export default function Home() {
   const [annotation, setAnnotation] = useState('');
   const [queries, setQueries] = useState([]);
   const [queryOptions, setQueryOptions] = useState([]);
+  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [loading, setLoading] = useState(false); // State for loading
 
   // Fetch initial options for the dropdown on page load
@@ -38,7 +39,7 @@ export default function Home() {
     setChatResult('');
 
     try {
-      const res = await fetch('/api/query', {
+      const res = await fetch(`/api/query?model=${selectedModel}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,21 +47,30 @@ export default function Home() {
         body: JSON.stringify({ input: userQuery }),
       });
       const data = await res.json();
-      setQueryResult('');
-      setTimeout(() => {
-        setQueryResult(data.query);
-      }, 200)
+      console.log(res)
+      if (res.status == 400) {
+        setQueryResult(data.query)
+        setChatResult(data.error);
 
-      const res2 = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ input: data.data }),
-      });
-      const data2 = await res2.json();
+      }
+      else {
+        setQueryResult('');
+        setTimeout(() => {
+          setQueryResult(data.query);
+        }, 200)
 
-      setChatResult(data2.data);
+        const res2 = await fetch(`/api/translate?model=${selectedModel}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ input: data.data }),
+        });
+        const data2 = await res2.json();
+
+        setChatResult(data2.data);
+      }
+
     } catch (error) {
       console.error('Error during query:', error);
     } finally {
@@ -111,9 +121,15 @@ export default function Home() {
       const annotation = (matchedQuery.match(/\/\* Annotation:\s*(.*?)\s*\*\//s) || ["", ""])[1].trim();
       const query = matchedQuery.replace(/\/\* Annotation:\s*.*?\s*\*\//s, '').trim();
       setAnnotation(annotation);
-      setQueryResult(query);
+      setQueryResult('');
     }
   };
+
+  const handleModelSelect = (event) => {
+    setSelectedModel(event.target.value);
+    console.log(event.target.value)
+  };
+
 
   return (
     <div style={{ position: 'relative', padding: '20px' }}>
@@ -125,15 +141,18 @@ export default function Home() {
           onInput={handleOptionSelect}
           type="text"
           placeholder="Enter your input"
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
+        />        
         <datalist id="query-options">
           {queryOptions.map((option, index) => (
             <option key={index} value={option} />
           ))}
         </datalist>
         <button onClick={handleQuery} style={{ marginRight: '10px' }}>Query</button>
-        <button onClick={handleChat}>Chat</button>
+        <select id="models" name="models" value={selectedModel} onChange={handleModelSelect}>
+          <option value="gpt-4o-mini">gpt-4o-mini</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="ft:gpt-4o-mini-2024-07-18:personal:test3:9yxC7GYJ">Fine Tuned</option>
+        </select>
       </div>
 
       <div style={{ marginTop: '20px' }}>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Select from 'react-select';
+
 
 export default function Home() {
   const [queryResult, setQueryResult] = useState('');
@@ -11,6 +13,9 @@ export default function Home() {
   const [queryOptions, setQueryOptions] = useState([]);
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [loading, setLoading] = useState(false); // State for loading
+  const [isFocused, setIsFocused] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
 
   // Fetch initial options for the dropdown on page load
   useEffect(() => {
@@ -28,10 +33,17 @@ export default function Home() {
       });
       setQueries(_queries);
       setQueryOptions(data.map(i => i.messages[0].content) || []);
+      console.log(data)
+
+
+
     };
 
     fetchInitialOptions();
   }, []);
+
+
+
 
   const handleQuery = async () => {
     setLoading(true); // Start spinner
@@ -132,6 +144,7 @@ export default function Home() {
       const query = matchedQuery.replace(/\/\* Annotation:\s*.*?\s*\*\//s, '').trim();
       setAnnotation(annotation);
       setQueryResult('');
+
     }
   };
 
@@ -144,19 +157,49 @@ export default function Home() {
   return (
     <div style={{ position: 'relative', padding: '20px' }}>
       <div>
+      <div style={{ position: 'relative' }} className="autocomplete-container">
         <input
-          list="query-options"
+          className="autocomplete-input"
           value={userQuery}
-          onChange={(e) => setUserQuery(e.target.value)}
-          onInput={handleOptionSelect}
+          onChange={(e) => {
+            setUserQuery(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            setShowDropdown(true);
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            // Delay hiding dropdown to allow option selection
+            setTimeout(() => setShowDropdown(false), 200);
+          }}
           type="text"
           placeholder="Enter your input"
-        />        
-        <datalist id="query-options">
-          {queryOptions.map((option, index) => (
-            <option key={index} value={option} />
-          ))}
-        </datalist>
+        />
+        {showDropdown && (
+          <div className="autocomplete-dropdown">
+            {queryOptions
+              .filter(option => option.toLowerCase().includes(userQuery.toLowerCase()))
+              .map((option, index) => (
+                <div
+                  className="autocomplete-option"
+                  key={index}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Prevent onBlur from firing immediately
+                    setUserQuery(option);
+                    setShowDropdown(false);
+                  }}
+                >
+                  {option}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+
+
+
         <button onClick={handleQuery} style={{ marginRight: '10px' }}>Query</button>
         <select id="models" name="models" value={selectedModel} onChange={handleModelSelect}>
           <option value="gpt-4o-mini">gpt-4o-mini</option>
@@ -190,7 +233,7 @@ export default function Home() {
       <div>
         <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
         <button onClick={handleSaveData} style={{ marginRight: '10px', marginTop: '10px' }}>Save Data</button>
-        <button onClick={handleExportJsonl} style={{ marginRight: '10px', marginTop: '10px'}}>Export training set (JSONL)</button>
+        <button onClick={handleExportJsonl} style={{ marginRight: '10px', marginTop: '10px' }}>Export training set (JSONL)</button>
       </div>
 
       {/* Overlay spinner */}

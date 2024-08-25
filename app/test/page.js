@@ -76,7 +76,7 @@ export default function Home() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ input: data.data }),
+          body: JSON.stringify({ query: `${userQuery} (${annotation})`, input: data.data }),
         });
         const data2 = await res2.json();
 
@@ -135,15 +135,19 @@ export default function Home() {
   };
 
   // Function to be called when an option is selected from the dropdown
-  const handleOptionSelect = (event) => {
-    console.log('Option selected:', event.target.value);
-    let matchedQuery = queries[event.target.value];
+  const handleOptionSelect = (event, option) => {
+    event.preventDefault(); // Prevent onBlur from firing immediately
+    console.log('Option selected:', option);
+    setUserQuery(option);
+    setShowDropdown(false);
+
+    let matchedQuery = queries[option];
     if (matchedQuery) {
-      setChatResult('')
+        setChatResult('')
       const annotation = (matchedQuery.match(/\/\* Annotation:\s*(.*?)\s*\*\//s) || ["", ""])[1].trim();
       const query = matchedQuery.replace(/\/\* Annotation:\s*.*?\s*\*\//s, '').trim();
       setAnnotation(annotation);
-      setQueryResult('');
+      setQueryResult(query);
 
     }
   };
@@ -185,12 +189,7 @@ export default function Home() {
                 <div
                   className="autocomplete-option"
                   key={index}
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent onBlur from firing immediately
-                    setUserQuery(option);
-                    setShowDropdown(false);
-                  }}
-                >
+                  onMouseDown={(e) => handleOptionSelect(e, option)}>
                   {option}
                 </div>
               ))}

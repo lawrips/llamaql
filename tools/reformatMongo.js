@@ -1,5 +1,7 @@
 /* 
 Here is a Node.js script using the MongoDB Node.js driver that retrieves all documents from the example_queries collection in the ffai database, processes each document to change its format, and then updates the documents back in the collection.
+
+DEPRECATED - this was a one time reformat for openai training format
 */
 
 

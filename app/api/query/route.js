@@ -22,7 +22,7 @@ export async function POST(request) {
 
 
     console.log(query.err);
-    return new Response(JSON.stringify({ query: JSON.stringify(query.query), error: "bad query - the db didnt like the form of that" }),
+    return new Response(JSON.stringify({ query: query.query, error: "bad query - the db didnt like the form of that" }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

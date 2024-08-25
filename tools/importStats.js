@@ -3,37 +3,73 @@ const path = require('path');
 const csv = require('csv-parser');
 const { MongoClient } = require('mongodb');
 
-async function processFile(client, collection, filePath, year, position) {
+// Function to load draft prices
+async function loadDraftPrices(filePath) {
+    const draftPrices = {};
+
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+            .pipe(csv())
+            .on('data', (data) => {
+                let position =  data.Position.trim()
+                if (position == '') {
+                    console.log('empty position!')
+                    console.log(data)
+                }
+                let name = data.Name.replace(/"/g, '').trim();
+                let price = parseFloat(data.Price.replace('$', '').trim());
+
+                if (!draftPrices[position]) {
+                    draftPrices[position] = {};
+                }
+                draftPrices[position][name] = price;
+            })
+            .on('end', () => {
+                resolve(draftPrices);
+            })
+            .on('error', (err) => {
+                reject(err);
+            });
+    });
+}
+
+async function processFile(client, collection, filePath, year, position, draftPrices) {
     const results = [];
 
     return new Promise((resolve, reject) => {
-        const results = [];
-        let isFirstRow = true;
-        let passingColumns, rushingColumns;
-        const headersModified = position === 'QB';
-        let count = 0;
         fs.createReadStream(filePath)
-        .pipe(csv())
-
+            .pipe(csv())
             .on('data', (data) => {
-                if (count == 0) console.log()
-                    count++;
                 const processedData = {};
 
-                for (let key in data) {
-                    let value = data[key];
-                    // Remove commas and convert to number if possible
-                    if (typeof value === 'string') {
-                        value = value.replace(/,/g, '');
-                        if (!isNaN(value)) {
-                            value = value.includes('.') ? parseFloat(value) : parseInt(value);
-                        }
+                // Normalize and store the player's name from the CSV file
+                const playerName = data['Player'].trim();
+
+                // Try to find a matching entry in the draftPrices for the same position
+                let draftPrice = 0;
+                for (let draftPlayerName in draftPrices[position]) {
+                    console.log(draftPlayerName)
+                    if (draftPlayerName.startsWith(playerName.replace(/\s*\(.*\)\s*/g, '').trim())) {
+                        draftPrice = draftPrices[position][draftPlayerName];
+
+                        break;
                     }
-                    processedData[key] = value;
                 }
 
+                // Process and clean up the rest of the data
+                for (let key in data) {
+                    let price = data[key];
+                    if (typeof price === 'string') {
+                        price = price.replace(/,/g, '');
+                        if (!isNaN(price)) {
+                            price = price.includes('.') ? parseFloat(price) : parseInt(price);
+                        }
+                    }
+                    processedData[key] = price;
+                }
 
-                // Add season_year and position fields to each record
+                // Add the draft price and other fields
+                processedData.DRAFT_PRICE = draftPrice;
                 processedData.season_year = parseInt(year);
                 processedData.position = position;
 
@@ -41,7 +77,6 @@ async function processFile(client, collection, filePath, year, position) {
             })
             .on('end', async () => {
                 try {
-                    // Insert the data into the MongoDB collection
                     if (results.length > 0) {
                         const insertResult = await collection.insertMany(results);
                         console.log(`${insertResult.insertedCount} records inserted from file ${filePath}.`);
@@ -59,43 +94,41 @@ async function processFile(client, collection, filePath, year, position) {
     });
 }
 
-async function main() {
-    // MongoDB connection URL
-    const uri = 'mongodb://admin:password@localhost:27017';
 
-    // MongoDB client
+async function main() {
+    const uri = 'mongodb://admin:password@localhost:27017';
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
     try {
-        // Connect to MongoDB
         await client.connect();
         const collection = client.db('ffai').collection('player_stats');
         await collection.deleteMany();
 
-        // Read all files in the /data directory
-        const files = fs.readdirSync('./data').filter(file => file.endsWith('.csv'));
+        const draftPricesFilePath = '../data/draft_price.csv';
+        const draftPrices = await loadDraftPrices(draftPricesFilePath);
+
+        const files = fs.readdirSync('../data').filter(file => file.endsWith('.csv'));
         for (const file of files) {
-            const filePath = path.join('./data', file);
-        
-            // Extract the year and position from the filename
+            if (file === 'draft_price.csv') continue; // Skip the draft_price.csv file
+
+            const filePath = path.join('../data', file);
             const match = file.match(/(\d{4})_(\w+)\.csv/);
             if (!match) {
                 console.error(`Filename ${file} does not match expected pattern.`);
                 continue;
             }
-        
+
             const year = match[1];
             const position = match[2];
+            console.log(position)
 
-            await processFile(client, collection, filePath, year, position);
+            await processFile(client, collection, filePath, year, position, draftPrices);
         }
     } catch (err) {
         console.error('Error connecting to MongoDB:', err);
     } finally {
-        // Ensure MongoDB connection is closed after all operations
         await client.close();
     }
 }
 
-// Execute the main function
 main().catch(console.error);

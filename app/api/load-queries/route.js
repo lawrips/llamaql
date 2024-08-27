@@ -11,7 +11,6 @@ export async function GET(request) {
     const db = client.db(dbName);
 
     let result = await db.collection('example_queries').find({}).toArray();
-    console.log(result)
 
     return new Response(JSON.stringify(result), {
         status: 200,

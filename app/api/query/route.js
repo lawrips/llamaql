@@ -7,22 +7,20 @@ export async function POST(request) {
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
 
-  const query = await rag.query(input, model)
-  if (query.err == null) {
+  const result = await rag.query(input, model)
+  if (result.err == null) {
     return new Response(
       JSON.stringify(
         {
-          query: JSON.stringify(query.query),
-          data: JSON.stringify(query.data),
+          query: JSON.stringify(result.query),
+          data: JSON.stringify(result.data),
         }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } else {
-
-
     console.log(query.err);
-    return new Response(JSON.stringify({ query: query.query, error: "bad query - the db didnt like the form of that" }),
+    return new Response(JSON.stringify({ query: result.query, error: "bad query - the db didnt like the form of that" }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

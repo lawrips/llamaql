@@ -101,7 +101,7 @@ async function main() {
 
     try {
         await client.connect();
-        const collection = client.db('ffai').collection('player_stats');
+        const collection = client.db('qgen').collection('player_stats');
         await collection.deleteMany();
 
         const draftPricesFilePath = '../data/draft_price.csv';

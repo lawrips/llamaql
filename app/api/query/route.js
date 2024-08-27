@@ -3,11 +3,14 @@ const { MongoClient } = require('mongodb');
 const rag = require('../../../lib/rag/rag');
 
 export async function POST(request) {
-  const { input } = await request.json();
+  const body = await request.json();
+  let input = body.input;
+  let instructions = body.instructions;
+  let schema = body.schema;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
 
-  const result = await rag.query(input, model)
+  const result = await rag.query(input, model, instructions, schema)
   if (result.err == null) {
     return new Response(
       JSON.stringify(

@@ -7,7 +7,7 @@ const filePath = './data/finetuneoutput.jsonl';
 module.exports = {
     exportJson: async function () {
         const url = 'mongodb://admin:password@localhost:27017';
-        const dbName = 'ffai'; // Database name
+        const dbName = 'qgen'; // Database name
         const collectionName = 'example_queries'; // Collection name
 
         // Create a new MongoClient

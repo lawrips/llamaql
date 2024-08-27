@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 const url = 'mongodb://admin:password@localhost:27017';
 const client = new MongoClient(url);
-const dbName = 'ffai';
+const dbName = 'qgen';
 
 export async function POST(request) {
     // You would normally save the data here

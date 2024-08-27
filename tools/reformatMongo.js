@@ -1,5 +1,5 @@
 /* 
-Here is a Node.js script using the MongoDB Node.js driver that retrieves all documents from the example_queries collection in the ffai database, processes each document to change its format, and then updates the documents back in the collection.
+Here is a Node.js script using the MongoDB Node.js driver that retrieves all documents from the example_queries collection in the qgen database, processes each document to change its format, and then updates the documents back in the collection.
 
 DEPRECATED - this was a one time reformat for openai training format
 */
@@ -13,7 +13,7 @@ async function updateDocuments() {
 
   try {
     await client.connect();
-    const database = client.db('ffai');
+    const database = client.db('qgen');
     const collection = database.collection('example_queries');
 
     const documents = await collection.find({}).toArray();

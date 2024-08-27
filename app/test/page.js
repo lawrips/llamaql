@@ -236,7 +236,7 @@ export default function Home() {
     <div style={{ position: 'relative', padding: '20px' }}>
       <div>
         <div style={{ position: 'relative' }} className="autocomplete-container">
-          <h1 style={{ color: "white" }}>Query Builder (@lawrips, v0.1)</h1>
+          <h1 style={{ color: "white" }}>QGEN (@lawrips, v0.1)</h1>
           <input
             className="autocomplete-input"
             value={userQuery}

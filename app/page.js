@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
+import { usePathname, useSearchParams } from 'next/navigation';
+
 
 
 export default function Home() {
@@ -19,6 +21,10 @@ export default function Home() {
   const [isFocused, setIsFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [models, setModels] = useState([]);
+  const [instructSubs, setInstructSubs] = useState([]);
+  const [checkedItems, setCheckedItems] = useState(new Set());
+  const searchParams = useSearchParams();
+  const app = searchParams.get('app'); 
 
 
   const _models = [
@@ -28,8 +34,9 @@ export default function Home() {
 
   // Fetch initial options for the dropdown on page load
   useEffect(() => {
+  
     const fetchInitialOptions = async () => {
-      const res = await fetch('/api/load-setup', {
+      const res = await fetch(`/api/load-setup?app=${app}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -42,9 +49,21 @@ export default function Home() {
       });
 
       setQueries(_queries);
-      setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);      
+      setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
-      setDataInstructions(data.instructions[0].instructions[0]);
+      let _instructions = data.instructions[0].instructions[0]
+      setDataInstructions(_instructions);
+
+      // extract all ${variables} from the instructions
+      let substitutions = _instructions.match(/\${(.*?)}/g);
+      substitutions = substitutions ? substitutions.map(match => match.slice(2, -1)) : [];
+      setInstructSubs(substitutions);
+      let _checked = new Set();
+      substitutions.forEach((i) => {
+        _checked.add(i);
+      });
+      setCheckedItems(_checked)
+      
 
       const finetunes = await fetch('/api/finetune', {
         method: 'GET',
@@ -70,12 +89,21 @@ export default function Home() {
     setChatResult('');
 
     try {
+      // remove items from instructions if requested
+      let _instructions = dataInstructions;
+      instructSubs.forEach((item) => {
+        if (!checkedItems.has(item)) {
+          _instructions = _instructions.replace("${" + item + "}", "")
+        }
+      })
+      console.log(_instructions)
+
       const res = await fetch(`/api/query?model=${selectedModel}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input: userQuery, instructions: dataInstructions, schema: dataSchema }),
+        body: JSON.stringify({ input: userQuery, instructions: _instructions, schema: dataSchema }),
       });
       const data = await res.json();
       console.log(res)
@@ -230,6 +258,17 @@ export default function Home() {
     console.log(event.target.value)
   };
 
+  const handleInstructSubChange = (item) => {
+    setCheckedItems((prevCheckedItems) => {
+      const newCheckedItems = new Set(prevCheckedItems);
+      if (newCheckedItems.has(item)) {
+        newCheckedItems.delete(item);
+      } else {
+        newCheckedItems.add(item);
+      }
+      return newCheckedItems;
+    });
+  };
 
   return (
     <div style={{ position: 'relative', padding: '20px' }}>
@@ -273,14 +312,15 @@ export default function Home() {
 
 
 
-        <button onClick={handleQuery} style={{ marginTop: '5px', marginRight: '10px' }}>Query</button>
         <select id="models" name="models" value={selectedModel} onChange={handleModelSelect}>
           {models.map((model, index) => (
             <option key={index} value={model.value}>
               {model.label}
             </option>
           ))}
-        </select>
+        </select>&nbsp;
+        <button onClick={handleQuery} style={{ marginTop: '5px', marginRight: '10px' }}>Query</button>
+
       </div>
 
       <div style={{ marginTop: '20px' }}>
@@ -288,8 +328,8 @@ export default function Home() {
         <Tabs>
           <TabList>
             <Tab>Data Query</Tab>
-            <Tab>Data Schema</Tab>
             <Tab>Data Instructions</Tab>
+            <Tab>Data Schema</Tab>
           </TabList>
           <TabPanel>
             <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-end' }}>
@@ -304,39 +344,57 @@ export default function Home() {
             </div>
           </TabPanel>
           <TabPanel>
-          <textarea
-                value={dataSchema}
-                placeholder="Data Schema"
-                onChange={(e) => setDataSchema(e.target.value)}
-                rows={10}
-                style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px' }}
-              />&nbsp;
-          </TabPanel>
-          <TabPanel>
-          <textarea
+            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+
+              <textarea
                 value={dataInstructions}
                 placeholder="Data Instructions"
                 onChange={(e) => setDataInstructions(e.target.value)}
                 rows={10}
-                style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px' }}
+                style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
               />&nbsp;
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                Enable / disable sending of variables in the instructions:<br/><br/>
+                {instructSubs.map((item) => (
+                  <div key={item}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={checkedItems.has(item)}
+                        onChange={() => handleInstructSubChange(item)}
+                      />&nbsp;
+                      {item}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </TabPanel>
-          </Tabs>
+          <TabPanel>
+            <textarea
+              value={dataSchema}
+              placeholder="Data Schema"
+              onChange={(e) => setDataSchema(e.target.value)}
+              rows={10}
+              style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+            />&nbsp;
+          </TabPanel>
+        </Tabs>
 
-          <textarea
-            value={chatResult}
-            readOnly
-            rows={10}
-            placeholder="Natural Language Result"
-            style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
-          />
-          <input
-            value={annotation}
-            onChange={(e) => setAnnotation(e.target.value)}
-            type="text"
-            placeholder="Annotation (Optional)"
-            style={{ marginRight: '10px', padding: '5px' }}
-          />
+        <textarea
+          value={chatResult}
+          readOnly
+          rows={10}
+          placeholder="Natural Language Result"
+          style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
+        />
+        <input
+          value={annotation}
+          onChange={(e) => setAnnotation(e.target.value)}
+          type="text"
+          placeholder="Annotation (Optional)"
+          style={{ marginRight: '10px', padding: '5px' }}
+        />
       </div>
 
       <div>

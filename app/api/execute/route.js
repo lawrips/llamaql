@@ -5,7 +5,11 @@ const mongo = require('../../../lib/services/mongo')
 
 export async function POST(request) {
   const { input } = await request.json();
-  const result = await mongo.executeMongoDBQuery(JSON.parse(input));
+  const { searchParams } = new URL(request.url);
+  const dbName = searchParams.get('app');
+
+  
+  const result = await mongo.executeMongoDBQuery(JSON.parse(input), dbName);
   if (result.err == null) {
     return new Response(
       JSON.stringify(

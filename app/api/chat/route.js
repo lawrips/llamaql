@@ -3,7 +3,10 @@ const { MongoClient } = require('mongodb');
 const exportJson = require('../../../tools/createFineTune');
 
 export async function POST(request) {
-  exportJson.exportJson();
+  const { searchParams } = new URL(request.url);
+  const dbName = searchParams.get('app');
+
+  exportJson.exportJson(dbName);
 
   return new Response(
       JSON.stringify(

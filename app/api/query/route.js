@@ -9,9 +9,10 @@ export async function POST(request) {
   let schema = body.schema;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
+  const dbName = searchParams.get('app');
 
-  const result = await rag.query(input, model, instructions, schema)
-  if (result.err == null) {
+  const result = await rag.query(input, model, instructions, schema, dbName)
+  if (result.error == null) {
     return new Response(
       JSON.stringify(
         {
@@ -22,8 +23,9 @@ export async function POST(request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } else {
-    console.log(result.err);
-    return new Response(JSON.stringify({ query: result.query, error: "bad query - the db didnt like the form of that" }),
+    console.log(result.error);
+    console.log(result.query);
+    return new Response(JSON.stringify({ query: JSON.stringify(result.query), error: JSON.stringify(result.error) }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

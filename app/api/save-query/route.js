@@ -1,10 +1,11 @@
 const { MongoClient } = require('mongodb');
 const url = 'mongodb://admin:password@localhost:27017';
 const client = new MongoClient(url);
-const dbName = 'qgen';
 
 export async function POST(request) {
     // You would normally save the data here
+    const { searchParams } = new URL(request.url);
+    const dbName = searchParams.get('app');
 
     await client.connect();
     const db = client.db(dbName);

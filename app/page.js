@@ -24,7 +24,7 @@ export default function Home() {
   const [instructSubs, setInstructSubs] = useState([]);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const searchParams = useSearchParams();
-  const app = searchParams.get('app'); 
+  const appName = searchParams.get('app'); 
 
 
   const _models = [
@@ -36,7 +36,7 @@ export default function Home() {
   useEffect(() => {
   
     const fetchInitialOptions = async () => {
-      const res = await fetch(`/api/load-setup?app=${app}`, {
+      const res = await fetch(`/api/load-setup?app=${appName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ export default function Home() {
       setCheckedItems(_checked)
       
 
-      const finetunes = await fetch('/api/finetune', {
+      const finetunes = await fetch(`/api/finetune?app=${appName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export default function Home() {
       })
       console.log(_instructions)
 
-      const res = await fetch(`/api/query?model=${selectedModel}`, {
+      const res = await fetch(`/api/query?model=${selectedModel}&app=${appName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export default function Home() {
           setDataQuery(data.query);
         }, 200)
 
-        const res2 = await fetch(`/api/translate?model=${selectedModel}`, {
+        const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export default function Home() {
     setChatResult('');
 
     try {
-      const res = await fetch(`/api/execute`, {
+      const res = await fetch(`/api/execute?app=${appName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ export default function Home() {
           setDataQuery(data.query);
         }, 200)
 
-        const res2 = await fetch(`/api/translate?model=${selectedModel}`, {
+        const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ export default function Home() {
   };
 
   const handleChat = async () => {
-    const res = await fetch('/api/chat', {
+    const res = await fetch(`/api/chat?app=${appName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ export default function Home() {
   };
 
   const handleSaveQuery = async () => {
-    await fetch('/api/save-query', {
+    await fetch(`/api/save-query?app=${appName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ export default function Home() {
   };
 
   const handleSaveData = async () => {
-    await fetch('/api/save-data', {
+    await fetch(`/api/save-data?app=${appName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -216,7 +216,7 @@ export default function Home() {
   };
 
   const handleExportJsonl = async () => {
-    await fetch('/api/export-json', {
+    await fetch(`/api/export-json?app=${appName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export default function Home() {
   };
 
   const handleFinetune = async () => {
-    await fetch('/api/finetune', {
+    await fetch(`/api/finetune?app=${appName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -271,15 +271,15 @@ export default function Home() {
   };
 
   return (
-    <div style={{ position: 'relative', padding: '20px' }}>
+    <div style={{ position: 'relative', padding: '10px' }}>
       <div>
         <div style={{ position: 'relative' }} className="autocomplete-container">
-          <h1 style={{ color: "white" }}>QGEN (@lawrips, v0.1)</h1>
+          <h3 style={{ color: "white" }}>QGEN (@lawrips, v0.1)</h3>
           <input
             className="autocomplete-input"
             value={userQuery}
             onChange={(e) => {
-              setUserQuery(e.target.value);
+              setUserQuery(e.target.value); 
               setShowDropdown(true);
             }}
             onFocus={() => {

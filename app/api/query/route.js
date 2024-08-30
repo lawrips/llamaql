@@ -25,7 +25,7 @@ export async function POST(request) {
   } else {
     console.log(result.error);
     console.log(result.query);
-    return new Response(JSON.stringify({ query: JSON.stringify(result.query), error: JSON.stringify(result.error) }),
+    return new Response(JSON.stringify({ query: JSON.stringify(result.query), error: JSON.stringify(result.error.toString()) }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

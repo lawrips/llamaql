@@ -103,10 +103,11 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input: userQuery, instructions: _instructions, schema: dataSchema }),
+        body: JSON.stringify({ input: `${userQuery} (${annotation})`, instructions: _instructions, schema: dataSchema }),
       });
       const data = await res.json();
-      console.log(res)
+      console.log('***')
+      console.log(data)
       if (res.status == 400) {
         setDataQuery(data.query)
         setChatResult(data.error);

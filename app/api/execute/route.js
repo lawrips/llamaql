@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const rag = require('../../../lib/rag/rag');
+const rag = require('../../../lib/rag/mongo/rag');
 const mongo = require('../../../lib/services/mongo')
 
 export async function POST(request) {
@@ -9,7 +9,7 @@ export async function POST(request) {
   const dbName = searchParams.get('app');
 
   
-  const result = await mongo.executeMongoDBQuery(JSON.parse(input), dbName);
+  const result = await mongo.execute(JSON.parse(input), dbName);
   if (result.err == null) {
     return new Response(
       JSON.stringify(

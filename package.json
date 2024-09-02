@@ -9,15 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.11.5",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.5",
+    "graphql": "^16.9.0",
     "mongodb": "^6.8.0",
     "next": "14.2.5",
     "openai": "^4.56.0",
     "react": "^18",
     "react-dom": "^18",
     "react-select": "^5.8.0",
-    "react-tabs": "^6.0.2"
+    "react-tabs": "^6.0.2",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "postcss": "^8",

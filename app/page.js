@@ -4,14 +4,18 @@ import { useState, useEffect } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { usePathname, useSearchParams } from 'next/navigation';
+import React, { PureComponent } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
 
 export default function Home() {
   const [dataQuery, setDataQuery] = useState('');
   const [dataSchema, setDataSchema] = useState('');
+  const [queryInstructions, setQueryInstructions] = useState('');
   const [dataInstructions, setDataInstructions] = useState('');
   const [chatResult, setChatResult] = useState('');
+  const [chartResult, setChartResult] = useState([]);
   const [userQuery, setUserQuery] = useState('');
   const [annotation, setAnnotation] = useState('');
   const [queries, setQueries] = useState([]);
@@ -24,7 +28,20 @@ export default function Home() {
   const [instructSubs, setInstructSubs] = useState([]);
   const [checkedItems, setCheckedItems] = useState(new Set());
   const searchParams = useSearchParams();
-  const appName = searchParams.get('app'); 
+  const appName = searchParams.get('app');
+
+
+  const data = [
+    {
+      xVal: 'A',
+      yVal: 4000,
+    },
+    {
+      xVal: 'B',
+      yVal: 3000,
+    }
+  ];
+
 
 
   const _models = [
@@ -34,7 +51,7 @@ export default function Home() {
 
   // Fetch initial options for the dropdown on page load
   useEffect(() => {
-  
+
     const fetchInitialOptions = async () => {
       const res = await fetch(`/api/load-setup?app=${appName}`, {
         method: 'GET',
@@ -52,7 +69,9 @@ export default function Home() {
       setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
       let _instructions = data.instructions[0].instructions[0]
-      setDataInstructions(_instructions);
+      setQueryInstructions(_instructions);
+
+      setDataInstructions(data.instructions[0].instructions[1]);
 
       // extract all ${variables} from the instructions
       let substitutions = _instructions.match(/\${(.*?)}/g);
@@ -63,7 +82,7 @@ export default function Home() {
         _checked.add(i);
       });
       setCheckedItems(_checked)
-      
+
 
       const finetunes = await fetch(`/api/finetune?app=${appName}`, {
         method: 'GET',
@@ -84,58 +103,78 @@ export default function Home() {
 
 
   const handleQuery = async () => {
+    //setChartResult(data)
+
+    if (userQuery) {
+
     setLoading(true); // Start spinner
     //setDataQuery('');
     setChatResult('');
 
-    try {
-      // remove items from instructions if requested
-      let _instructions = dataInstructions;
-      instructSubs.forEach((item) => {
-        if (!checkedItems.has(item)) {
-          _instructions = _instructions.replace("${" + item + "}", "")
-        }
-      })
-      console.log(_instructions)
 
-      const res = await fetch(`/api/query?model=${selectedModel}&app=${appName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ input: `${userQuery} (${annotation})`, instructions: _instructions, schema: dataSchema }),
-      });
-      const data = await res.json();
-      console.log('***')
-      console.log(data)
-      if (res.status == 400) {
-        setDataQuery(data.query)
-        setChatResult(data.error);
+      try {
+        // remove items from instructions if requested
+        let _instructions = queryInstructions;
+        instructSubs.forEach((item) => {
+          if (!checkedItems.has(item)) {
+            _instructions = _instructions.replace("${" + item + "}", "")
+          }
+        })
+        console.log(_instructions)
 
-      }
-      else {
-        setDataQuery('');
-        setTimeout(() => {
-          setDataQuery(data.query);
-        }, 200)
-
-        const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
+        const res = await fetch(`/api/query?model=${selectedModel}&app=${appName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ query: `${userQuery} (${annotation})`, input: data.data }),
+          body: JSON.stringify({ input: `${userQuery} (${annotation})`, instructions: _instructions, schema: dataSchema }),
         });
-        const data2 = await res2.json();
+        const data = await res.json();
+        console.log('***')
+        console.log(data)
+        if (res.status == 400) {
+          setDataQuery(data.query)
+          setChatResult(data.error);
 
-        setChatResult(data2.data);
+        }
+        else {
+          setDataQuery('');
+          setTimeout(() => {
+            setDataQuery(data.query);
+          }, 200)
+
+          const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: `${userQuery} (${annotation})`, input: data.data, instructions: dataInstructions }),
+          });
+          const data2 = await res2.json();
+
+          setChatResult(data2.data);
+
+          let extractCode = function (text) {
+            const regex = /```(?:javascript|json|js)\s*([\s\S]*?)\s*```/;
+            const match = text.match(regex);
+            return match ? match[1].trim() : null;
+          }
+          let _chartData = extractCode(data2.data);
+          console.log(_chartData)
+          _chartData = JSON.parse(_chartData)
+          console.log('chart data')
+          console.log(_chartData)
+          setChartResult(_chartData)
+
+
+        }
+
+      } catch (error) {
+        console.error('Error during query:', error);
+      } finally {
+        setLoading(false); // Stop spinner
       }
-
-    } catch (error) {
-      console.error('Error during query:', error);
-    } finally {
-      setLoading(false); // Stop spinner
-    }
+    } 
   };
 
   const handleDirectQuery = async () => {
@@ -280,7 +319,7 @@ export default function Home() {
             className="autocomplete-input"
             value={userQuery}
             onChange={(e) => {
-              setUserQuery(e.target.value); 
+              setUserQuery(e.target.value);
               setShowDropdown(true);
             }}
             onFocus={() => {
@@ -329,6 +368,7 @@ export default function Home() {
         <Tabs>
           <TabList>
             <Tab>Data Query</Tab>
+            <Tab>Query Instructions</Tab>
             <Tab>Data Instructions</Tab>
             <Tab>Data Schema</Tab>
           </TabList>
@@ -346,16 +386,15 @@ export default function Home() {
           </TabPanel>
           <TabPanel>
             <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-
               <textarea
-                value={dataInstructions}
-                placeholder="Data Instructions"
-                onChange={(e) => setDataInstructions(e.target.value)}
+                value={queryInstructions}
+                placeholder="Query Instructions"
+                onChange={(e) => setQueryInstructions(e.target.value)}
                 rows={10}
                 style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
               />&nbsp;
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                Enable / disable sending of variables in the instructions:<br/><br/>
+                Enable / disable sending of variables in the instructions:<br /><br />
                 {instructSubs.map((item) => (
                   <div key={item}>
                     <label>
@@ -372,6 +411,17 @@ export default function Home() {
             </div>
           </TabPanel>
           <TabPanel>
+            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+              <textarea
+                value={dataInstructions}
+                placeholder="Data Instructions"
+                onChange={(e) => setDataInstructions(e.target.value)}
+                rows={10}
+                style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+              />&nbsp;
+            </div>
+          </TabPanel>
+          <TabPanel>
             <textarea
               value={dataSchema}
               placeholder="Data Schema"
@@ -382,13 +432,44 @@ export default function Home() {
           </TabPanel>
         </Tabs>
 
-        <textarea
-          value={chatResult}
-          readOnly
-          rows={10}
-          placeholder="Natural Language Result"
-          style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
-        />
+        <Tabs>
+          <TabList>
+            <Tab>Chat</Tab>
+            <Tab>Chart</Tab>
+          </TabList>
+          <TabPanel>
+            <textarea
+              value={chatResult}
+              readOnly
+              rows={10}
+              placeholder="Natural Language Result"
+              style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
+            />
+          </TabPanel>
+          <TabPanel>
+            <ResponsiveContainer className="chart" width="100%" height={400}>
+              <br />
+              <LineChart
+                width={500}
+                height={300}
+                data={chartResult}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="xVal" />
+                <YAxis domain={[350, 420]}/>
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="yVal" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </TabPanel>
+        </Tabs>
         <input
           value={annotation}
           onChange={(e) => setAnnotation(e.target.value)}

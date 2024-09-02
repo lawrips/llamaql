@@ -150,3 +150,9 @@ button:active {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.chart {
+  background: white;
+  margin-bottom: 20px;
+
+}

@@ -15,10 +15,12 @@ export default function Home() {
   const [queryInstructions, setQueryInstructions] = useState('');
   const [dataInstructions, setDataInstructions] = useState('');
   const [chatResult, setChatResult] = useState('');
-  const [chartResult, setChartResult] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [yMinMax, setYMinMax] = useState([]);
   const [userQuery, setUserQuery] = useState('');
   const [annotation, setAnnotation] = useState('');
   const [queries, setQueries] = useState([]);
+  const [results, setResults] = useState([]);
   const [queryOptions, setQueryOptions] = useState([]);
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [loading, setLoading] = useState(false); // State for loading
@@ -61,11 +63,14 @@ export default function Home() {
       });
       const data = await res.json();
       let _queries = {};
+      let _results = {};
       data.exampleQueries.forEach(i => {
         _queries[i.messages[0].content] = i.messages[1].content;
+        _results[i.messages[0].content] = i.savedData;
       });
 
       setQueries(_queries);
+      setResults(_results);
       setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
       let _instructions = data.instructions[0].instructions[0]
@@ -82,7 +87,6 @@ export default function Home() {
         _checked.add(i);
       });
       setCheckedItems(_checked)
-
 
       const finetunes = await fetch(`/api/finetune?app=${appName}`, {
         method: 'GET',
@@ -103,7 +107,7 @@ export default function Home() {
 
 
   const handleQuery = async () => {
-    //setChartResult(data)
+    //setChartData(data)
 
     if (userQuery) {
 
@@ -154,17 +158,7 @@ export default function Home() {
 
           setChatResult(data2.data);
 
-          let extractCode = function (text) {
-            const regex = /```(?:javascript|json|js)\s*([\s\S]*?)\s*```/;
-            const match = text.match(regex);
-            return match ? match[1].trim() : null;
-          }
-          let _chartData = extractCode(data2.data);
-          console.log(_chartData)
-          _chartData = JSON.parse(_chartData)
-          console.log('chart data')
-          console.log(_chartData)
-          setChartResult(_chartData)
+          makeChart(data2.data);
 
 
         }
@@ -175,6 +169,25 @@ export default function Home() {
         setLoading(false); // Stop spinner
       }
     } 
+  };
+
+  const makeChart = (data) => {
+    let extractCode = function (text) {
+      const regex = /```(?:javascript|json|js)\s*([\s\S]*?)\s*```/;
+      const match = text.match(regex);
+      return match ? match[1].trim() : null;
+    }
+    let _chartData = extractCode(data);
+    console.log(_chartData)
+    _chartData = JSON.parse(_chartData)
+    console.log('chart data')
+    console.log(_chartData)
+    setChartData(_chartData)
+    const _yMinMax = [
+      Math.min(..._chartData.map(d => d.y)), // find the minimum y-value
+      Math.max(..._chartData.map(d => d.y)), // find the maximum y-value
+    ];
+    setYMinMax(_yMinMax);    
   };
 
   const handleDirectQuery = async () => {
@@ -250,7 +263,7 @@ export default function Home() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ chatResult }),
+      body: JSON.stringify({ query: userQuery, data: chatResult }),
     });
     alert('Chat result saved!');
   };
@@ -289,6 +302,11 @@ export default function Home() {
       const query = matchedQuery.replace(/\/\* Annotation:\s*.*?\s*\*\//s, '').trim();
       setAnnotation(annotation);
       setDataQuery(query);
+
+      if (results[option]) {
+        setChatResult(results[option]);
+        makeChart(results[option]);
+      }
 
     }
   };
@@ -452,7 +470,7 @@ export default function Home() {
               <LineChart
                 width={500}
                 height={300}
-                data={chartResult}
+                data={chartData}
                 margin={{
                   top: 5,
                   right: 30,
@@ -462,7 +480,7 @@ export default function Home() {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="xVal" />
-                <YAxis domain={[350, 420]}/>
+                <YAxis domain={[yMinMax[0], yMinMax[1]]}/>
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="yVal" stroke="#8884d8" activeDot={{ r: 8 }} />
@@ -481,7 +499,7 @@ export default function Home() {
 
       <div>
         <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
-        {/*<button onClick={handleSaveData} style={{ marginRight: '10px', marginTop: '10px' }}>Save Data</button>*/}
+        {<button onClick={handleSaveData} style={{ marginRight: '10px', marginTop: '10px' }}>Save Data</button>}
         {<button onClick={handleExportJsonl} style={{ marginRight: '10px', marginTop: '10px' }}>Export training set (JSONL)</button>}
         {<button onClick={handleFinetune} style={{ marginRight: '10px', marginTop: '10px' }}>Begin Finetune</button>}
       </div>

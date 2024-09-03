@@ -18,6 +18,16 @@ export async function GET(request) {
     let exampleQueries = await db.collection('example_queries').find({}).toArray();
     let dataSchema = await db.collection('data_schema').find({}).toArray();
     let instructions = await db.collection('instructions').find({}).toArray();
+    let savedData = await db.collection('saved_data').find({}).toArray();
+
+    exampleQueries.forEach((item) => {
+        let result = savedData.filter(i => i.query == item.messages[0].content);
+        if (result.length == 1) {
+            item.savedData = result[0].data;
+        }
+    })
+
+    console.log(exampleQueries);
 
     return new Response(JSON.stringify(
         {

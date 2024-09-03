@@ -25,7 +25,6 @@ export async function POST(request) {
 export async function GET(request) {
 // List 10 fine-tuning jobs
 let page = await openai.fineTuning.jobs.list({ limit: 10 });
-console.log(page.data);  
 
 return new Response(
   JSON.stringify(

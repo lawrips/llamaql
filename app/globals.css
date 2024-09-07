@@ -156,3 +156,14 @@ button:active {
   margin-bottom: 20px;
 
 }
+
+.tab-container {
+  display: flex;
+  width: "100%";
+  align-items: center;
+}
+
+.collapsible {
+  cursor: pointer;
+  margin-left: 10px; /* Adjust as needed */
+}

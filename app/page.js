@@ -5,7 +5,7 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { PureComponent } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Rectangle, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
 
@@ -17,6 +17,7 @@ export default function Home() {
   const [chatResult, setChatResult] = useState('');
   const [chartData, setChartData] = useState([]);
   const [yMinMax, setYMinMax] = useState([]);
+  const [ticks, setTicks] = useState([]);
   const [userQuery, setUserQuery] = useState('');
   const [annotation, setAnnotation] = useState('');
   const [queries, setQueries] = useState([]);
@@ -31,7 +32,13 @@ export default function Home() {
   const [checkedItems, setCheckedItems] = useState(new Set());
   const searchParams = useSearchParams();
   const appName = searchParams.get('app');
+  const [isOpen, setIsOpen] = useState(false);
 
+  const toggleContent = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const numTicks = 10;
 
   const data = [
     {
@@ -111,9 +118,9 @@ export default function Home() {
 
     if (userQuery) {
 
-    setLoading(true); // Start spinner
-    //setDataQuery('');
-    setChatResult('');
+      setLoading(true); // Start spinner
+      //setDataQuery('');
+      setChatResult('');
 
 
       try {
@@ -168,7 +175,7 @@ export default function Home() {
       } finally {
         setLoading(false); // Stop spinner
       }
-    } 
+    }
   };
 
   const makeChart = (data) => {
@@ -183,11 +190,18 @@ export default function Home() {
     console.log('chart data')
     console.log(_chartData)
     setChartData(_chartData)
+    console.log(_chartData)
+
     const _yMinMax = [
-      Math.min(..._chartData.map(d => d.y)), // find the minimum y-value
-      Math.max(..._chartData.map(d => d.y)), // find the maximum y-value
+      Math.min(..._chartData.map(d => d.yVal * 0.95)), // find the minimum y-value
+      Math.max(..._chartData.map(d => d.yVal * 1.05)), // find the maximum y-value
     ];
-    setYMinMax(_yMinMax);    
+
+    setYMinMax(_yMinMax);
+    const _ticks = getNiceTicks(_yMinMax[0], _yMinMax[1], numTicks);
+    console.log(_ticks)
+    setTicks(_ticks);
+
   };
 
   const handleDirectQuery = async () => {
@@ -328,11 +342,29 @@ export default function Home() {
     });
   };
 
+
+  const getNiceTicks = (min, max, numTicks) => {
+    const range = max - min;
+    const rawTickInterval = range / (numTicks - 1);
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawTickInterval)));
+    const niceTickInterval = Math.ceil(rawTickInterval / magnitude) * magnitude;
+
+    const niceMin = Math.floor(min / niceTickInterval) * niceTickInterval;
+    const niceMax = Math.ceil(max / niceTickInterval) * niceTickInterval;
+
+    const ticks = [];
+    for (let tick = niceMin; tick <= niceMax; tick += niceTickInterval) {
+      ticks.push(tick);
+    }
+
+    return ticks;
+  };
+
   return (
     <div style={{ position: 'relative', padding: '10px' }}>
       <div>
         <div style={{ position: 'relative' }} className="autocomplete-container">
-          <h3 style={{ color: "white" }}>QGEN (@lawrips, v0.1)</h3>
+          <h3 style={{ color: "white" }}>QGEN (v0.1)</h3>
           <input
             className="autocomplete-input"
             value={userQuery}
@@ -382,74 +414,86 @@ export default function Home() {
       </div>
 
       <div style={{ marginTop: '20px' }}>
-
         <Tabs>
+        <div className="tab-container">
+
           <TabList>
             <Tab>Data Query</Tab>
             <Tab>Query Instructions</Tab>
             <Tab>Data Instructions</Tab>
             <Tab>Data Schema</Tab>
           </TabList>
-          <TabPanel>
-            <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-end' }}>
-              <textarea
-                value={dataQuery}
-                placeholder="Data Query"
-                onChange={(e) => setDataQuery(e.target.value)}
-                rows={10}
-                style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px' }}
-              />&nbsp;
-              <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>&gt;</button>
+          <div className="collapsible" onClick={toggleContent}>
+              {isOpen ? '⮝⮝' : '⮟⮟'} 
             </div>
-          </TabPanel>
-          <TabPanel>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <textarea
-                value={queryInstructions}
-                placeholder="Query Instructions"
-                onChange={(e) => setQueryInstructions(e.target.value)}
-                rows={10}
-                style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
-              />&nbsp;
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                Enable / disable sending of variables in the instructions:<br /><br />
-                {instructSubs.map((item) => (
-                  <div key={item}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={checkedItems.has(item)}
-                        onChange={() => handleInstructSubChange(item)}
-                      />&nbsp;
-                      {item}
-                    </label>
-                  </div>
-                ))}
-              </div>
             </div>
-          </TabPanel>
-          <TabPanel>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <textarea
-                value={dataInstructions}
-                placeholder="Data Instructions"
-                onChange={(e) => setDataInstructions(e.target.value)}
-                rows={10}
-                style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
-              />&nbsp;
-            </div>
-          </TabPanel>
-          <TabPanel>
-            <textarea
-              value={dataSchema}
-              placeholder="Data Schema"
-              onChange={(e) => setDataSchema(e.target.value)}
-              rows={10}
-              style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
-            />&nbsp;
-          </TabPanel>
-        </Tabs>
 
+          {isOpen && (
+
+            <div className="content">
+              <TabPanel>
+                <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-end' }}>
+                  <textarea
+                    value={dataQuery}
+                    placeholder="Data Query"
+                    onChange={(e) => setDataQuery(e.target.value)}
+                    rows={10}
+                    style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px' }}
+                  />&nbsp;
+                  <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>&gt;</button>
+                </div>
+              </TabPanel>
+              <TabPanel>
+                <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <textarea
+                    value={queryInstructions}
+                    placeholder="Query Instructions"
+                    onChange={(e) => setQueryInstructions(e.target.value)}
+                    rows={10}
+                    style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                  />&nbsp;
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    Enable / disable sending of variables in the instructions:<br /><br />
+                    {instructSubs.map((item) => (
+                      <div key={item}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={checkedItems.has(item)}
+                            onChange={() => handleInstructSubChange(item)}
+                          />&nbsp;
+                          {item}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel>
+                <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <textarea
+                    value={dataInstructions}
+                    placeholder="Data Instructions"
+                    onChange={(e) => setDataInstructions(e.target.value)}
+                    rows={10}
+                    style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                  />&nbsp;
+                </div>
+              </TabPanel>
+              <TabPanel>
+                <textarea
+                  value={dataSchema}
+                  placeholder="Data Schema"
+                  onChange={(e) => setDataSchema(e.target.value)}
+                  rows={10}
+                  style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                />&nbsp;
+              </TabPanel>
+            </div>
+          )}
+        </Tabs>
+        <hr/>
+        <br/>
         <Tabs>
           <TabList>
             <Tab>Chat</Tab>
@@ -465,9 +509,9 @@ export default function Home() {
             />
           </TabPanel>
           <TabPanel>
-            <ResponsiveContainer className="chart" width="100%" height={400}>
+            <ResponsiveContainer className="chart" width="100%" height={600} marginBottom={100}>
               <br />
-              <LineChart
+              <BarChart
                 width={500}
                 height={300}
                 data={chartData}
@@ -475,16 +519,22 @@ export default function Home() {
                   top: 5,
                   right: 30,
                   left: 20,
-                  bottom: 5,
+                  bottom: 100,
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="xVal" />
-                <YAxis domain={[yMinMax[0], yMinMax[1]]}/>
+                <XAxis interval={0} width={40} tick={{
+                  width: 20,
+                  fill: '#666',
+                }} dataKey="xVal" />
+                <YAxis
+                  domain={[ticks[0], ticks[ticks.length - 1]]}
+                  ticks={ticks}
+                  tickFormatter={(value) => value.toFixed(0)}
+                />
                 <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="yVal" stroke="#8884d8" activeDot={{ r: 8 }} />
-              </LineChart>
+                <Bar type="monotone" dataKey="yVal" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </BarChart>
             </ResponsiveContainer>
           </TabPanel>
         </Tabs>

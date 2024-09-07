@@ -1,6 +1,7 @@
 const { MongoClient } = require('mongodb');
 
-const rag = require('../../../lib/rag/mongo/rag');
+const rag = require('../../../lib/rag/sqlite3/rag');
+//const rag = require('../../../lib/rag/mongo/rag');
 //const rag = require('../../../lib/rag/graphql/rag');
 
 export async function POST(request) {

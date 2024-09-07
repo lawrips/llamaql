@@ -32,7 +32,7 @@ export default function Home() {
   const [checkedItems, setCheckedItems] = useState(new Set());
   const searchParams = useSearchParams();
   const appName = searchParams.get('app');
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleContent = () => {
     setIsOpen(!isOpen);
@@ -80,20 +80,23 @@ export default function Home() {
       setResults(_results);
       setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
-      let _instructions = data.instructions[0].instructions[0]
-      setQueryInstructions(_instructions);
+      console.log(data)
+      if (data.instructions[0]) {
+        let _instructions = data.instructions[0][0]
+        setQueryInstructions(_instructions);
 
-      setDataInstructions(data.instructions[0].instructions[1]);
+        setDataInstructions(data.instructions[1][0]);
 
-      // extract all ${variables} from the instructions
-      let substitutions = _instructions.match(/\${(.*?)}/g);
-      substitutions = substitutions ? substitutions.map(match => match.slice(2, -1)) : [];
-      setInstructSubs(substitutions);
-      let _checked = new Set();
-      substitutions.forEach((i) => {
-        _checked.add(i);
-      });
-      setCheckedItems(_checked)
+        // extract all ${variables} from the instructions
+        let substitutions = _instructions.match(/\${(.*?)}/g);
+        substitutions = substitutions ? substitutions.map(match => match.slice(2, -1)) : [];
+        setInstructSubs(substitutions);
+        let _checked = new Set();
+        substitutions.forEach((i) => {
+          _checked.add(i);
+        });
+        setCheckedItems(_checked)
+      }
 
       const finetunes = await fetch(`/api/finetune?app=${appName}`, {
         method: 'GET',
@@ -128,7 +131,7 @@ export default function Home() {
         let _instructions = queryInstructions;
         instructSubs.forEach((item) => {
           if (!checkedItems.has(item)) {
-            _instructions = _instructions.replace("${" + item + "}", "")
+            _instructions = _instructions.replace("{" + item + "}", "")
           }
         })
         console.log(_instructions)
@@ -415,18 +418,18 @@ export default function Home() {
 
       <div style={{ marginTop: '20px' }}>
         <Tabs>
-        <div className="tab-container">
+          <div className="tab-container">
 
-          <TabList>
-            <Tab>Data Query</Tab>
-            <Tab>Query Instructions</Tab>
-            <Tab>Data Instructions</Tab>
-            <Tab>Data Schema</Tab>
-          </TabList>
-          <div className="collapsible" onClick={toggleContent}>
-              {isOpen ? '⮝⮝' : '⮟⮟'} 
+            <TabList>
+              <Tab>Data Query</Tab>
+              <Tab>Query Instructions</Tab>
+              <Tab>Data Instructions</Tab>
+              <Tab>Data Schema</Tab>
+            </TabList>
+            <div className="collapsible" onClick={toggleContent}>
+              {isOpen ? '⮝⮝' : '⮟⮟'}
             </div>
-            </div>
+          </div>
 
           {isOpen && (
 
@@ -492,8 +495,8 @@ export default function Home() {
             </div>
           )}
         </Tabs>
-        <hr/>
-        <br/>
+        <hr />
+        <br />
         <Tabs>
           <TabList>
             <Tab>Chat</Tab>

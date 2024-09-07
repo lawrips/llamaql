@@ -3,11 +3,16 @@
 
 
 import { useEffect, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+
 import DragAndDrop from '../../lib/components/DragAndDrop';
 
 export default function Home() {
   const [data, setData] = useState(null);
   const [fileContents, setFileContents] = useState('');
+  const searchParams = useSearchParams();
+  const appName = searchParams.get('app');
+
 
   useEffect(() => {
     console.log('Component mounted or updated');
@@ -15,7 +20,7 @@ export default function Home() {
     const fetchInitialOptions = async () => {
 
       try {
-        const response = await fetch('/api/upload', {
+        const response = await fetch(`/api/upload?app=${appName}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -28,7 +33,7 @@ export default function Home() {
 
         let result = await response.json();
         console.log(result)
-        setData('there are rows in the db = ' + result.data.length);
+        setData('there are rows in the = ' + result.data.length);
       } catch (error) {
         console.error('Error in postData:', error);
         throw error;
@@ -45,7 +50,7 @@ export default function Home() {
   const handleFileRead = async (contents) => {
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`/api/upload?app=${appName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

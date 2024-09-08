@@ -18,8 +18,8 @@ export async function POST(request) {
     return new Response(
       JSON.stringify(
         {
-          query: JSON.stringify(result.query),
-          data: JSON.stringify(result.data),
+          query: result.query,
+          data: result.data,
         }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

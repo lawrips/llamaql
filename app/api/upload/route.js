@@ -18,6 +18,8 @@ export async function POST(request) {
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
     db.exec(`DROP TABLE IF EXISTS data_schema`);
+    db.exec(`DROP TABLE IF EXISTS example_queries`);
+    db.exec(`DROP TABLE IF EXISTS saved_data`);
     db.exec(`DROP TABLE IF EXISTS instructions`);
     console.log(`Tables have been dropped.`);
 
@@ -31,7 +33,7 @@ export async function POST(request) {
 
     let result = await insertData(db, contents);
     await createSchema(db);
-    await createInstructions(db);
+    await createSetup(db);
 
     return new Response(
       JSON.stringify(
@@ -167,19 +169,18 @@ const determineColumnTypes = (parsedData, sampleSize = 100) => {
   });
 };
 
-const createInstructions = async (db) => {
+const createSetup = async (db) => {
 
-  db.exec(`
-      CREATE TABLE instructions (
-        data TEXT
-      );
-    `);
-
-  // Insert the text row
-  db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions.instructions[0])]);
-  db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions.instructions[1])]);
-
+  db.exec(`CREATE TABLE instructions (data TEXT);`);
+  db.prepare('INSERT INTO instructions (data) VALUES (?)').run([instructions.instructions[0]]);
+  db.prepare('INSERT INTO instructions (data) VALUES (?)').run([instructions.instructions[1]]);
   console.log('created instructions')
+
+  db.exec(`CREATE TABLE example_queries (data TEXT);`);
+  console.log('created example_queries')
+
+  db.exec(`CREATE TABLE saved_data (data TEXT);`);
+  console.log('created saved_data')
 }
 
 const createSchema = async (db) => {
@@ -196,7 +197,7 @@ const createSchema = async (db) => {
   console.log(schema.sql);
 
   const stmt = db.prepare(`SELECT * FROM query_data`);
-  let exampleData = stmt.raw().all();
+  let exampleData = stmt.all();
   console.log('exampleData:')
   console.log(exampleData[0])
 
@@ -244,8 +245,7 @@ const insertData = async (db, data) => {
   const headers = parsedData.meta.fields.map(header => sanitizeHeader(header, sanitizedHeaders));
   console.log('headers:')
   console.log(headers)
-  console.log('parsedData:')
-  console.log(parsedData)
+  console.log('parsedData')
   await createTable(db, parsedData);
 
   const placeholders = headers.map(() => '?').join(', ');

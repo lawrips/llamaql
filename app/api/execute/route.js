@@ -1,7 +1,10 @@
 const { MongoClient } = require('mongodb');
 
-const rag = require('../../../lib/rag/mongo/rag');
-const mongo = require('../../../lib/services/mongo')
+//const rag = require('../../../lib/rag/mongo/rag');
+//const mongo = require('../../../lib/services/mongo')
+const rag = require('../../../lib/rag/sqlite3/rag');
+const db = require('../../../lib/services/sql')
+
 
 export async function POST(request) {
   const { input } = await request.json();
@@ -9,13 +12,14 @@ export async function POST(request) {
   const dbName = searchParams.get('app');
 
   
-  const result = await mongo.execute(JSON.parse(input), dbName);
+  //const result = await mongo.execute(JSON.parse(input), dbName);
+  const result = await db.execute(input, dbName);
   if (result.err == null) {
     return new Response(
       JSON.stringify(
         {
           query: input,
-          data: JSON.stringify(result),
+          data: result,
         }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

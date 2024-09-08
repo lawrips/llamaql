@@ -6,6 +6,7 @@ import 'react-tabs/style/react-tabs.css';
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { PureComponent } from 'react';
 import { BarChart, Bar, Rectangle, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Search } from 'lucide-react';
 
 
 
@@ -20,8 +21,9 @@ export default function Home() {
   const [ticks, setTicks] = useState([]);
   const [userQuery, setUserQuery] = useState('');
   const [annotation, setAnnotation] = useState('');
-  const [queries, setQueries] = useState([]);
-  const [results, setResults] = useState([]);
+  const [queries, setQueries] = useState({});
+  const [results, setResults] = useState({});
+  const [annotations, setAnnotations] = useState({});
   const [queryOptions, setQueryOptions] = useState([]);
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [loading, setLoading] = useState(false); // State for loading
@@ -71,14 +73,18 @@ export default function Home() {
       const data = await res.json();
       let _queries = {};
       let _results = {};
+      let _annotations = {};
+      console.log(data.exampleQueries)
       data.exampleQueries.forEach(i => {
-        _queries[i.messages[0].content] = i.messages[1].content;
-        _results[i.messages[0].content] = i.savedData;
+        _queries[i.userQuery] = i.dataQuery;
+        _results[i.userQuery] = i.savedData;
+        _annotations[i.userQuery] = i.userAnnotation;
       });
 
       setQueries(_queries);
       setResults(_results);
-      setQueryOptions(data.exampleQueries.map(i => i.messages[0].content) || []);
+      setAnnotations(_annotations);
+      setQueryOptions(data.exampleQueries.map(i => i.userQuery));
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
       console.log(data)
       if (data.instructions[0]) {
@@ -88,8 +94,7 @@ export default function Home() {
         setDataInstructions(data.instructions[1][0]);
 
         // extract all ${variables} from the instructions
-        let substitutions = _instructions.match(/\${(.*?)}/g);
-        substitutions = substitutions ? substitutions.map(match => match.slice(2, -1)) : [];
+        let substitutions = [...new Set(_instructions.match(/{([^}]+)}/g).map(match => match.slice(1, -1)))];
         setInstructSubs(substitutions);
         let _checked = new Set();
         substitutions.forEach((i) => {
@@ -213,7 +218,7 @@ export default function Home() {
     setChatResult('');
 
     try {
-      const res = await fetch(`/api/execute?app=${appName}`, {
+      const res = await fetch(`/api/execute?model=${selectedModel}&app=${appName}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,6 +226,7 @@ export default function Home() {
         body: JSON.stringify({ input: dataQuery }),
       });
       const data = await res.json();
+      console.log(data)
 
       if (res.status == 400) {
         setDataQuery(data.query)
@@ -237,11 +243,12 @@ export default function Home() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ query: `${userQuery} (${annotation})`, input: data.data }),
+          body: JSON.stringify({ query: `${userQuery} (${annotation})`, input: data.data, instructions: dataInstructions}),
         });
         const data2 = await res2.json();
 
         setChatResult(data2.data);
+        makeChart(data2.data);
       }
 
     } catch (error) {
@@ -269,7 +276,7 @@ export default function Home() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ messages: [{ role: 'user', content: userQuery }, { role: 'assistant', content: dataQuery + (annotation ? ` /* Annotation: ${annotation} */` : '') }] }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: userQuery + (annotation ? ` /* Annotation: ${annotation} */` : '') }, { role: 'assistant', content: dataQuery }] }),
     });
     alert('Query result saved!');
   };
@@ -315,8 +322,8 @@ export default function Home() {
     let matchedQuery = queries[option];
     if (matchedQuery) {
       setChatResult('')
-      const annotation = (matchedQuery.match(/\/\* Annotation:\s*(.*?)\s*\*\//s) || ["", ""])[1].trim();
-      const query = matchedQuery.replace(/\/\* Annotation:\s*.*?\s*\*\//s, '').trim();
+      const annotation = annotations[option];
+      const query = matchedQuery;
       setAnnotation(annotation);
       setDataQuery(query);
 
@@ -364,10 +371,14 @@ export default function Home() {
   };
 
   return (
-    <div style={{ position: 'relative', padding: '10px' }}>
-      <div>
-        <div style={{ position: 'relative' }} className="autocomplete-container">
-          <h3 style={{ color: "white" }}>QGEN (v0.1)</h3>
+    <div style={{ padding: '10px' }}>
+     <div className="grid-container">
+      <div className="col-span-2">
+        <h3 className="text-xl font-bold mb-2">QGEN (v0.1)</h3>
+      </div>
+      
+      <div className="autocomplete-container">
+        <div className="relative">
           <input
             className="autocomplete-input"
             value={userQuery}
@@ -381,40 +392,61 @@ export default function Home() {
             }}
             onBlur={() => {
               setIsFocused(false);
-              // Delay hiding dropdown to allow option selection
               setTimeout(() => setShowDropdown(false), 200);
             }}
             type="text"
             placeholder="Natural Language Query"
           />
-          {showDropdown && (
-            <div className="autocomplete-dropdown">
-              {queryOptions
-                .filter(option => option.toLowerCase().includes(userQuery.toLowerCase()))
-                .map((option, index) => (
-                  <div
-                    className="autocomplete-option"
-                    key={index}
-                    onMouseDown={(e) => handleOptionSelect(e, option)}>
-                    {option}
-                  </div>
-                ))}
-            </div>
-          )}
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
-
-
-
-        <select id="models" name="models" value={selectedModel} onChange={handleModelSelect}>
+        {showDropdown && (
+          <div className="autocomplete-dropdown">
+            {queryOptions
+              .filter(option => option.toLowerCase().includes(userQuery.toLowerCase()))
+              .map((option, index) => (
+                <div
+                  className="autocomplete-option"
+                  key={index}
+                  onMouseDown={(e) => handleOptionSelect(e, option)}>
+                  {option}
+                </div>
+              ))}
+          </div>            
+        )}
+      </div>
+      
+      <div>
+        <input
+          value={annotation}
+          onChange={(e) => setAnnotation(e.target.value)}
+          type="text"
+          placeholder="Annotation (Optional)"
+        />
+      </div>
+      
+      <div>
+        <select
+          id="models"
+          name="models"
+          value={selectedModel}
+          onChange={handleModelSelect}
+        >
+          <option value="">Select a model</option>
           {models.map((model, index) => (
             <option key={index} value={model.value}>
               {model.label}
             </option>
           ))}
-        </select>&nbsp;
-        <button onClick={handleQuery} style={{ marginTop: '5px', marginRight: '10px' }}>Query</button>
-
+        </select>
       </div>
+      
+      <div className="col-span-1">
+        <button onClick={handleQuery}>
+          Query
+        </button>
+      </div>
+    </div>
+
 
       <div style={{ marginTop: '20px' }}>
         <Tabs>
@@ -427,7 +459,7 @@ export default function Home() {
               <Tab>Data Schema</Tab>
             </TabList>
             <div className="collapsible" onClick={toggleContent}>
-              {isOpen ? '⮝⮝' : '⮟⮟'}
+              {isOpen ? '⮝' : '⮟'}
             </div>
           </div>
 
@@ -441,8 +473,8 @@ export default function Home() {
                     placeholder="Data Query"
                     onChange={(e) => setDataQuery(e.target.value)}
                     rows={10}
-                    style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px' }}
-                  />&nbsp;
+                    style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap'  }}
+                  />&nbsp;&nbsp;
                   <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>&gt;</button>
                 </div>
               </TabPanel>
@@ -505,10 +537,10 @@ export default function Home() {
           <TabPanel>
             <textarea
               value={chatResult}
-              readOnly
               rows={10}
+              readOnly
               placeholder="Natural Language Result"
-              style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
+              style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
             />
           </TabPanel>
           <TabPanel>
@@ -541,13 +573,6 @@ export default function Home() {
             </ResponsiveContainer>
           </TabPanel>
         </Tabs>
-        <input
-          value={annotation}
-          onChange={(e) => setAnnotation(e.target.value)}
-          type="text"
-          placeholder="Annotation (Optional)"
-          style={{ marginRight: '10px', padding: '5px' }}
-        />
       </div>
 
       <div>

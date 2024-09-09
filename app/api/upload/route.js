@@ -18,7 +18,7 @@ export async function POST(request) {
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
     db.exec(`DROP TABLE IF EXISTS data_schema`);
-    db.exec(`DROP TABLE IF EXISTS example_queries`);
+    db.exec(`DROP TABLE IF EXISTS queries`);
     db.exec(`DROP TABLE IF EXISTS saved_data`);
     db.exec(`DROP TABLE IF EXISTS instructions`);
     console.log(`Tables have been dropped.`);
@@ -176,8 +176,10 @@ const createSetup = async (db) => {
   db.prepare('INSERT INTO instructions (data) VALUES (?)').run([instructions.instructions[1]]);
   console.log('created instructions')
 
-  db.exec(`CREATE TABLE example_queries (data TEXT);`);
-  console.log('created example_queries')
+  //db.exec(`CREATE TABLE queries (data TEXT);`);
+  db.exec(`CREATE TABLE queries (userQuery TEXT, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
+
+  console.log('created queries')
 
   db.exec(`CREATE TABLE saved_data (data TEXT);`);
   console.log('created saved_data')

@@ -7,7 +7,7 @@ const filePath = './data/finetuneoutput.jsonl';
 module.exports = {
     exportJson: async function (dbName) {
         const url = 'mongodb://admin:password@localhost:27017';
-        const collectionName = 'example_queries'; // Collection name
+        const collectionName = 'queries'; // Collection name
 
         // Create a new MongoClient
         const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });

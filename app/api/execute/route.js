@@ -13,7 +13,7 @@ export async function POST(request) {
 
   
   //const result = await mongo.execute(JSON.parse(input), dbName);
-  const result = await db.execute(input, dbName);
+  const result = await db.query(dbName, input);
   if (result.err == null) {
     return new Response(
       JSON.stringify(

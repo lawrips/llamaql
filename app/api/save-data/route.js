@@ -15,7 +15,7 @@ export async function POST(request) {
     let result = await db.collection('saved_data').insertOne(json, { writeConcern: { w: "majority" } });
     console.log(result)
 
-
+    
     return new Response(JSON.stringify({ message: 'Query result saved' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },

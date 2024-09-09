@@ -11,7 +11,7 @@ import { Search } from 'lucide-react';
 
 
 export default function Home() {
-  const [dataQuery, setDataQuery] = useState('');
+  const [dbQuery, setDbQuery] = useState('');
   const [dataSchema, setDataSchema] = useState('');
   const [queryInstructions, setQueryInstructions] = useState('');
   const [dataInstructions, setDataInstructions] = useState('');
@@ -74,17 +74,17 @@ export default function Home() {
       let _queries = {};
       let _results = {};
       let _annotations = {};
-      console.log(data.exampleQueries)
-      data.exampleQueries.forEach(i => {
-        _queries[i.userQuery] = i.dataQuery;
-        _results[i.userQuery] = i.savedData;
+      console.log(data.queries)
+      data.queries.forEach(i => {
+        _queries[i.userQuery] = i.dbQuery;
+        _results[i.userQuery] = i.dbResult;
         _annotations[i.userQuery] = i.userAnnotation;
       });
 
       setQueries(_queries);
       setResults(_results);
       setAnnotations(_annotations);
-      setQueryOptions(data.exampleQueries.map(i => i.userQuery));
+      setQueryOptions(data.queries.map(i => i.userQuery));
       setDataSchema(JSON.stringify(data.dataSchema, null, 2));
       console.log(data)
       if (data.instructions[0]) {
@@ -127,7 +127,7 @@ export default function Home() {
     if (userQuery) {
 
       setLoading(true); // Start spinner
-      //setDataQuery('');
+      //setDbQuery('');
       setChatResult('');
 
 
@@ -152,14 +152,14 @@ export default function Home() {
         console.log('***')
         console.log(data)
         if (res.status == 400) {
-          setDataQuery(data.query)
+          setDbQuery(data.query)
           setChatResult(data.error);
 
         }
         else {
-          setDataQuery('');
+          setDbQuery('');
           setTimeout(() => {
-            setDataQuery(data.query);
+            setDbQuery(data.query);
           }, 200)
 
           const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
@@ -214,7 +214,7 @@ export default function Home() {
 
   const handleDirectQuery = async () => {
     setLoading(true); // Start spinner
-    //setDataQuery('');
+    //setDbQuery('');
     setChatResult('');
 
     try {
@@ -223,19 +223,19 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ input: dataQuery }),
+        body: JSON.stringify({ input: dbQuery }),
       });
       const data = await res.json();
       console.log(data)
 
       if (res.status == 400) {
-        setDataQuery(data.query)
+        setDbQuery(data.query)
         setChatResult(data.error);
       }
       else {
-        setDataQuery('');
+        setDbQuery('');
         setTimeout(() => {
-          setDataQuery(data.query);
+          setDbQuery(data.query);
         }, 200)
 
         const res2 = await fetch(`/api/translate?model=${selectedModel}&app=${appName}`, {
@@ -276,7 +276,8 @@ export default function Home() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ messages: [{ role: 'user', content: userQuery + (annotation ? ` /* Annotation: ${annotation} */` : '') }, { role: 'assistant', content: dataQuery }] }),
+      //body: JSON.stringify({ messages: [{ role: 'user', content: userQuery + (annotation ? ` /* Annotation: ${annotation} */` : '') }, { role: 'assistant', content: dbQuery }] }),
+        body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
     });
     alert('Query result saved!');
   };
@@ -325,7 +326,7 @@ export default function Home() {
       const annotation = annotations[option];
       const query = matchedQuery;
       setAnnotation(annotation);
-      setDataQuery(query);
+      setDbQuery(query);
 
       if (results[option]) {
         setChatResult(results[option]);
@@ -469,9 +470,9 @@ export default function Home() {
               <TabPanel>
                 <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-end' }}>
                   <textarea
-                    value={dataQuery}
+                    value={dbQuery}
                     placeholder="Data Query"
-                    onChange={(e) => setDataQuery(e.target.value)}
+                    onChange={(e) => setDbQuery(e.target.value)}
                     rows={10}
                     style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap'  }}
                   />&nbsp;&nbsp;

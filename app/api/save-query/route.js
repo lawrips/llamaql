@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+const db = require('../../../lib/services/sql');
 
 export async function POST(request) {
     // You would normally save the data here
@@ -6,15 +7,12 @@ export async function POST(request) {
     const dbName = searchParams.get('app');
 
     let json = await request.json();
-    console.log(json)
+    console.log(json);
 
-    const db = new Database(`./data/${dbName}.db`, {});
-    db.pragma('journal_mode = WAL');
+    let result = db.run(dbName, 'INSERT INTO queries (userQuery, userAnnotation, dbQuery, dbResult) VALUES (?, ?, ?, ?)', [json.userQuery, json.userAnnotation, json.dbQuery, json.dbResult]);
+    console.log(result.changes)
+//    result = db.run(dbName, 'INSERT INTO saved_data (data) VALUES (?)', JSON.stringify(json));
 
-
-    let result = db.prepare('INSERT INTO example_queries (data) VALUES (?)').run(JSON.stringify(json));
-
-    console.log(result)
 
     return new Response(JSON.stringify({ message: 'Query result saved' }), {
         status: 200,
@@ -36,7 +34,7 @@ export async function POST(request) {
     let json = await request.json();
     console.log(json)
 
-    let result = await db.collection('example_queries').insertOne(json, { writeConcern: { w: "majority" } });
+    let result = await db.collection('queries').insertOne(json, { writeConcern: { w: "majority" } });
     console.log(result)
 
 

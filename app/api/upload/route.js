@@ -232,7 +232,7 @@ const createTable = async (db, parsedData) => {
 const insertData = async (db, data) => {
   const parsedData = await new Promise((resolve, reject) => {
     Papa.parse(data, {
-      delimiter: ';',
+      delimiter: guessDelimiter(data),
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false,
@@ -272,3 +272,24 @@ const insertData = async (db, data) => {
 
   return result;
 };
+
+
+function guessDelimiter(csvString) {
+  // Analyze the first line or two of the CSV data
+  const lines = csvString.split('\n').slice(0, 2); // First two lines
+  const sample = lines.join('\n');
+
+  const delimiters = [',', ';', '\t', '|'];
+  let delimiterCount = {};
+
+  // Count occurrences of each delimiter in the sample
+  delimiters.forEach((delimiter) => {
+    const count = (sample.match(new RegExp(`\\${delimiter}`, 'g')) || []).length;
+    delimiterCount[delimiter] = count;
+  });
+
+  // Find the delimiter with the highest occurrence
+  return Object.keys(delimiterCount).reduce((a, b) =>
+    delimiterCount[a] > delimiterCount[b] ? a : b
+  );
+}

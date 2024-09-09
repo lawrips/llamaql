@@ -1,6 +1,6 @@
 const Database = require( 'better-sqlite3' );
 
-const db = new Database(`./data/strength.db`, {});
+const db = new Database(`./data/newstrength.db`, {});
 db.pragma('journal_mode = WAL');
 const tableName = '';
 

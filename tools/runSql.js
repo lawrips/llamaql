@@ -1,12 +1,28 @@
-const Database = require( 'better-sqlite3' );
+const Database = require('better-sqlite3');
+const readline = require('readline');
 
-const db = new Database(`./data/strength.db`, {});
+// Initialize the database connection
+const db = new Database(`./data/imdb.db`, {});
 db.pragma('journal_mode = WAL');
-const tableName = '';
 
+// Create a readline interface to capture input from the command line
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-let result = db.prepare("SELECT * FROM queries").all();
+// Ask the user for an SQL query
+rl.question('Please enter an SQL query: ', (sqlQuery) => {
+    try {
+        // Prepare and execute the SQL query provided by the user
+        let result = db.prepare(sqlQuery).run();
 
-setTimeout(() => {
-    console.log(result);
-}, 1000);
+        // Output the result
+        console.log(result);
+    } catch (error) {
+        console.error("Error executing query:", error.message);
+    }
+
+    // Close the readline interface
+    rl.close();
+});

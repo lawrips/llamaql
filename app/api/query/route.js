@@ -9,11 +9,13 @@ export async function POST(request) {
   let input = body.input;
   let instructions = body.instructions;
   let schema = body.schema;
+  let requery = body.requery;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
   const dbName = searchParams.get('app');
 
-  const result = await rag.query(input, model, instructions, schema, dbName)
+  let result = await rag.query(input, model, instructions, schema, dbName, requery || null);
+
   if (result.error == null) {
     return new Response(
       JSON.stringify(

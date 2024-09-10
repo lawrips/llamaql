@@ -7,6 +7,8 @@ const InstructionPanel = ({
   setDbQuery,
   queryInstructions,
   setQueryInstructions,
+  requeryInstructions,
+  setRequeryInstructions,
   dataInstructions,
   setDataInstructions,
   dataSchema,
@@ -29,6 +31,7 @@ const InstructionPanel = ({
           <TabList>
             <Tab>Data Query</Tab>
             <Tab>Query Instructions</Tab>
+            <Tab>Requery Instructions</Tab>
             <Tab>Data Instructions</Tab>
             <Tab>Data Schema</Tab>
           </TabList>
@@ -57,6 +60,32 @@ const InstructionPanel = ({
                   value={queryInstructions}
                   placeholder="Query Instructions"
                   onChange={(e) => setQueryInstructions(e.target.value)}
+                  rows={10}
+                  style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                />&nbsp;
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  Enable / disable sending of variables in the instructions:<br /><br />
+                  {instructSubs.map((item) => (
+                    <div key={item}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={checkedItems.has(item)}
+                          onChange={() => handleInstructSubChange(item)}
+                        />&nbsp;
+                        {item}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabPanel>
+            <TabPanel>
+              <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                <textarea
+                  value={requeryInstructions}
+                  placeholder="Requery Instructions"
+                  onChange={(e) => setRequeryInstructions(e.target.value)}
                   rows={10}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;

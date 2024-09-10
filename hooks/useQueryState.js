@@ -12,12 +12,15 @@ export const useQueryState = (appName) => {
     const [queryOptions, setQueryOptions] = useState([]);
     const [models, setModels] = useState([]);
     const [queryInstructions, setQueryInstructions] = useState('');
+    const [requeryInstructions, setRequeryInstructions] = useState('');
     const [dataInstructions, setDataInstructions] = useState('');
     const [dataSchema, setDataSchema] = useState('');
     const [instructSubs, setInstructSubs] = useState([]);
     const [checkedItems, setCheckedItems] = useState(new Set());
     const [showDropdown, setShowDropdown] = useState('');
     const [queries, setQueries] = useState({});
+    const [focusedInput, setFocusedInput] = useState(null);
+
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -26,11 +29,13 @@ export const useQueryState = (appName) => {
 
             setQueryOptions(data.queries.map(i => i.userQuery));
             setDataSchema(JSON.stringify(data.dataSchema, null, 2));
-            if (data.instructions[0]) {
-                const _instructions = data.instructions[0][0];
-                setQueryInstructions(_instructions);
-                setDataInstructions(data.instructions[1][0]);
-                const substitutions = [...new Set(_instructions.match(/{([^}]+)}/g).map(match => match.slice(1, -1)))];
+            if (data.instructions) {
+                const _instructions = JSON.parse(data.instructions);
+                console.log(_instructions)
+                setQueryInstructions(_instructions.queryInstructions);
+                setRequeryInstructions(_instructions.requeryInstructions);
+                setDataInstructions(_instructions.dataInstructions);
+                const substitutions = [...new Set(_instructions.queryInstructions.match(/{([^}]+)}/g).map(match => match.slice(1, -1)))];
                 setInstructSubs(substitutions);
                 setCheckedItems(new Set(substitutions));
             }
@@ -45,18 +50,25 @@ export const useQueryState = (appName) => {
         fetchInitialData();
     }, [appName]);
 
-    const handleQuery = async () => {
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            // Trigger the button click event
+            handleQuery();
+        }
+    };
+
+    const handleQuery = async (requery) => {
         if (userQuery) {
             setLoading(true);
             setChatResult('');
             try {
-                let _instructions = queryInstructions;
+                let _instructions = requery ? requeryInstructions : queryInstructions;
                 instructSubs.forEach((item) => {
                     if (!checkedItems.has(item)) {
                         _instructions = _instructions.replace("{" + item + "}", "")
                     }
                 });
-                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema);
+                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dbQuery, requery);
                 console.log(queryData)
                 setDbQuery(queryData.query);
                 const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
@@ -100,7 +112,8 @@ export const useQueryState = (appName) => {
             setChatResult('')
             setAnnotation(matchedQuery.userAnnotation);
             setDbQuery(matchedQuery.dbQuery);
-
+            //setFocusedInput(null);
+            
             if (matchedQuery.dbResult) {
                 setChatResult(matchedQuery.dbResult);
                 makeChart(matchedQuery.dbResult);
@@ -110,13 +123,17 @@ export const useQueryState = (appName) => {
 
 
     const makeChart = (data) => {
+        console.log(data)
         const extractCode = (text) => {
             const regex = /```(?:javascript|json|js)\s*([\s\S]*?)\s*```/;
             const match = text.match(regex);
             return match ? match[1].trim() : null;
         };
+        console.log(extractCode(data))
         let _chartData = JSON.parse(extractCode(data));
-        setChartData(_chartData);
+        if (_chartData) {
+            setChartData(_chartData);
+        }
     };
 
     const handleInstructSubChange = (item) => {
@@ -159,6 +176,17 @@ export const useQueryState = (appName) => {
         alert('Finetuning started!');
     };
 
+    
+    const getInputStyle = (inputType) => {
+        const baseStyle = {
+            transition: 'all 300ms ease-in-out',
+            width: focusedInput === null ? '50%' : (focusedInput === inputType ? '75%' : '25%'),
+            minWidth: 0, // This allows the input to shrink below its content size
+        };
+        return baseStyle;
+    };
+
+
     return {
         userQuery,
         setUserQuery,
@@ -175,6 +203,8 @@ export const useQueryState = (appName) => {
         models,
         queryInstructions,
         setQueryInstructions,
+        requeryInstructions,
+        setRequeryInstructions,
         dataInstructions,
         setDataInstructions,
         dataSchema,
@@ -191,5 +221,8 @@ export const useQueryState = (appName) => {
         showDropdown,
         setShowDropdown,
         handleOptionSelect,
+        setFocusedInput,
+        getInputStyle,
+        handleKeyDown
     };
 };

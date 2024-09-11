@@ -11,16 +11,23 @@ import ResultPanel from '../components/ResultPanel';
 import ActionButtons from '../components/ActionButtons';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
-
+import { useEffect } from 'react';
 
 export default function Home() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const appName = searchParams.get('app');
-    if (!appName) {
-        router.push('/upload');
-    }
+    let appName = searchParams.get('app');
 
+    useEffect(() => {
+        if (!appName) {
+            router.push('/upload');
+        }
+    }, [searchParams, router]);
+
+    if (!appName) {
+        return null;
+      }
+    
     const {
         userQuery,
         setUserQuery,
@@ -61,7 +68,7 @@ export default function Home() {
     } = useQueryState(appName);
 
     return (
-        <div style={{padding: "10px"}}>
+        <div style={{ padding: "10px" }}>
             <div className="col-span-2">
                 <h3 className="text-xl font-bold mb-2">QGEN (v0.1)</h3>
             </div>

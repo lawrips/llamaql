@@ -68,7 +68,7 @@ export const useQueryState = (appName) => {
                         _instructions = _instructions.replace("{" + item + "}", "")
                     }
                 });
-                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dbQuery, requery);
+                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, requery ? dbQuery : null);
                 console.log(queryData)
                 setDbQuery(queryData.query);
                 const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);

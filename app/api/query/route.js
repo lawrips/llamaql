@@ -14,6 +14,8 @@ export async function POST(request) {
   const model = searchParams.get('model');
   const dbName = searchParams.get('app');
 
+  console.log("****** NEW QUERY REQUEST ******** ")
+
   let result = await rag.query(input, model, instructions, schema, dbName, requery || null);
 
   if (result.error == null) {

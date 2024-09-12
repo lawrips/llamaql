@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const readline = require('readline');
 
 // Initialize the database connection
-const db = new Database(`./data/imdb.db`, {});
+const db = new Database(`./db/imdb.db`, {fileMustExist: true});
 db.pragma('journal_mode = WAL');
 
 // Create a readline interface to capture input from the command line

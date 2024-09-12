@@ -101,10 +101,10 @@ async function main() {
 
     try {
         await client.connect();
-        const collection = client.db('qgen').collection('query_data');
+        const collection = client.db('LLMQL').collection('query_data');
         await collection.deleteMany();
 
-        const draftPricesFilePath = '../data/draft_price.csv';
+        const draftPricesFilePath = '../db/draft_price.csv';
         const draftPrices = await loadDraftPrices(draftPricesFilePath);
 
         const files = fs.readdirSync('../data').filter(file => file.endsWith('.csv'));

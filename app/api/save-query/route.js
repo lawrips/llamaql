@@ -1,8 +1,6 @@
-import Database from 'better-sqlite3';
 const db = require('../../../lib/services/sql');
 
 export async function POST(request) {
-    // You would normally save the data here
     const { searchParams } = new URL(request.url);
     const dbName = searchParams.get('app');
 
@@ -11,10 +9,24 @@ export async function POST(request) {
 
     let result = db.run(dbName, 'INSERT INTO queries (userQuery, userAnnotation, dbQuery, dbResult) VALUES (?, ?, ?, ?)', [json.userQuery, json.userAnnotation, json.dbQuery, json.dbResult]);
     console.log(result.changes)
-//    result = db.run(dbName, 'INSERT INTO saved_data (data) VALUES (?)', JSON.stringify(json));
-
 
     return new Response(JSON.stringify({ message: 'Query result saved' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+export async function DELETE(request) {
+    const { searchParams } = new URL(request.url);
+    const dbName = searchParams.get('app');
+
+    let json = await request.json();
+    console.log(json);
+
+    let result = db.run(dbName, 'DELETE FROM queries WHERE userQuery = ?', [json.userQuery]);
+    console.log(result.changes)
+
+    return new Response(JSON.stringify({ message: 'Query result deleted' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     });

@@ -1,12 +1,11 @@
-const csv = require('csv-parser');
-const { Readable } = require('stream');
 import Database from 'better-sqlite3';
-const Papa = require('papaparse')
-const utils = require('../../../lib/utils/typeUtils');
+const Papa = require('papaparse');
+const fs = require('fs');
+const path = require('path');
 
+const utils = require('../../../lib/utils/typeUtils');
 const instructions = require('../../../lib/constants/instructions')
 
-const tableName = 'query_data';
 
 export async function POST(request) {
   const { searchParams } = new URL(request.url);
@@ -14,7 +13,7 @@ export async function POST(request) {
   const contents = await request.json();
 
   if (dbName) {
-    const db = new Database(`./data/${dbName}.db`, {});
+    const db = new Database(`./db/${dbName}.db`, {fileMustExist: true});
     db.pragma('journal_mode = WAL');
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
@@ -59,28 +58,34 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const dbName = searchParams.get('app');
+  // Read and Filter .db files
+  const directoryPath = path.join(process.cwd(), 'db');
+  let files = fs.readdirSync(directoryPath);
+  const dbFiles = files.filter(file => path.extname(file) === '.db');
+  console.log(dbFiles);
 
-  let rows = [];
+  let data = [];
 
-  if (dbName) {
+  if (dbFiles.length > 0) {
 
     try {
-      const db = new Database(`./data/${dbName}.db`, {});
-      db.pragma('journal_mode = WAL');
+      dbFiles.forEach((file) => {
+        const db = new Database(`./db/${file}`, {fileMustExist: true});
+        db.pragma('journal_mode = WAL');
+        const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
+        let count = stmt.all();
+        console.log(count)
+        db.close();
+        data.push({file: file.replace(".db",""), count: count[0].rowCount});
+      });
 
-      const stmt = db.prepare(`SELECT * FROM ${tableName}`);
-      rows = stmt.all();
-      console.log("rows: " + rows.length);
-      console.log(rows.slice(rows.length - 7, rows.length - 6))
     } catch (ex) {
       console.log(ex);
     }
     return new Response(
       JSON.stringify(
         {
-          data: rows,
+          data,
           status: 'ok'
         }), {
       status: 200,
@@ -91,6 +96,7 @@ export async function GET(request) {
     return new Response(
       JSON.stringify(
         {
+          data: [],
           status: 'DB not found - must supply ?app=appname'
         }), {
       status: 404,

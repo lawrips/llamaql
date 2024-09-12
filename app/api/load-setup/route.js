@@ -8,9 +8,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const dbName = searchParams.get('app');
 
-    let result = await rag.getQueries(dbName);
+    let result = await rag.getSetup(dbName);
     console.log('example queries:');
-
     console.log(result);
 
 /*    result.queries = result.queries.map((i) => JSON.parse(i.data));
@@ -21,10 +20,7 @@ export async function GET(request) {
         dataQuery: i.messages[1].content            
         }
     })*/
-
-        
-
-
+           
     return new Response(JSON.stringify(
         {
             queries: result.queries,

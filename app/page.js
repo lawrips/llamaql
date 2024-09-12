@@ -43,6 +43,7 @@ export default function Home() {
         queryOptions,
         models,
         handleOptionSelect,
+        handleDeleteOption,
         handleQuery,
         handleDirectQuery,
         handleSaveQuery,
@@ -70,7 +71,7 @@ export default function Home() {
     return (
         <div style={{ padding: "10px" }}>
             <div className="col-span-2">
-                <h3 className="text-xl font-bold mb-2">QGEN (v0.1)</h3>
+                <h3 className="text-xl font-bold mb-2">LLMQL (v0.1)</h3>
             </div>
             <div className="flex w-full gap-4 p-4" style={{ minHeight: '50px' }}>
 
@@ -82,6 +83,7 @@ export default function Home() {
                     showDropdown={showDropdown}
                     setShowDropdown={setShowDropdown}
                     handleOptionSelect={handleOptionSelect}
+                    handleDeleteOption={handleDeleteOption}
                     setFocusedInput={setFocusedInput}
                     getInputStyle={getInputStyle}
                     handleKeyDown={handleKeyDown}

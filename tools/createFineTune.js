@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 const { instructions } = require('../lib/constants/instructions');
 const fs = require('fs');
-const filePath = './data/finetuneoutput.jsonl';
+const filePath = './db/finetuneoutput.jsonl';
 
 
 module.exports = {

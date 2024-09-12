@@ -11,14 +11,31 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [fileContents, setFileContents] = useState('');
   const [appName, setAppName] = useState('');
+  const [dbFiles, setDbFiles] = useState([]);
 
   useEffect(() => {
     console.log('Component mounted or updated');
 
+    const load = async () => {
+      const response = await fetch(`/api/upload`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
 
-    return () => {
-      console.log('Cleanup');
+      return data;
+    }
+
+    const fetchData = async () => {
+      const data = await load();
+      console.log(data);
+      setDbFiles(data.data);
     };
+
+    fetchData();
+
   }, []);
 
   const handleUpload = async (contents) => {
@@ -51,49 +68,64 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div className="max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Upload a CSV to get started</h1>
-      
-      <div className="space-y-6">
-        <div>
-          <label htmlFor="app-name" className="block text-lg font-large text-gray-700">
-            1. Enter an app name
-          </label>
-          <input
-            maxLength={12}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            value={appName}
-            onChange={(e) => setAppName(e.target.value.trim())}
-            type="text"
-            placeholder="Enter an App Name (1 word, no special chars)"
-          />
-        </div>
+      <div className="max-w-md mx-auto">
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Select or Upload a new DB</h1>
 
-        <div>
-          <label className="block text-lg font-large text-gray-700 mb-2">
-            2. Upload a CSV file
-          </label>
-          <DragAndDrop onFileRead={handleUpload} />
-        </div>
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Option 1: Select a DB</h2>
 
-        {fileContents && result > 0 && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">Successfully uploaded {result} rows</h2>
-              <div className="mt-2 max-w-xl text-sm text-gray-500">
-                <p>Access the app <a className="text-indigo-600 hover:text-indigo-500" target="_blank" href={`/?app=${appName}`}>here</a></p>
+          <div className="grid grid-cols-3 gap-4 p-4">
+            {dbFiles.map((item, index) => (
+              <div key={index} className="border p-4 rounded shadow">
+                <span>
+                <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
+                <p><a href={`/?app=${item.file}`}>({item.count} rows)</a></p>
+                </span>
               </div>
-              <div className="mt-3 text-sm">
-                <details>
-                  <summary className="text-indigo-600 cursor-pointer">View sample of uploaded content</summary>
-                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">{fileContents.slice(0, 500)}</pre>
-                </details>
+            ))}
+          </div>
+
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Option 2: Upload a CSV</h2>
+
+          <div>
+            <label htmlFor="app-name" className="block text-lg font-large text-gray-700">
+              1. Enter an app name
+            </label>
+            <input
+              maxLength={12}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              value={appName}
+              onChange={(e) => setAppName(e.target.value.trim())}
+              type="text"
+              placeholder="Enter an App Name (1 word, no special chars)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-lg font-large text-gray-700 mb-2">
+              2. Upload a CSV file
+            </label>
+            <DragAndDrop onFileRead={handleUpload} />
+          </div>
+
+          {fileContents && result > 0 && (
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h2 className="text-lg leading-6 font-medium text-gray-900">Successfully uploaded {result} rows</h2>
+                <div className="mt-2 max-w-xl text-sm text-gray-500">
+                  <p>Access the app <a className="text-indigo-600 hover:text-indigo-500" target="_blank" href={`/?app=${appName}`}>here</a></p>
+                </div>
+                <div className="mt-3 text-sm">
+                  <details>
+                    <summary className="text-indigo-600 cursor-pointer">View sample of uploaded content</summary>
+                    <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">{fileContents.slice(0, 500)}</pre>
+                  </details>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
-  </div>
   );
 }

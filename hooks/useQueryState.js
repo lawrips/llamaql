@@ -24,14 +24,15 @@ export const useQueryState = (appName) => {
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const data = await fetchInitialOptions(appName);      
+            const data = await fetchInitialOptions(appName); 
+            console.log(data)     
             setQueries(data.queries);
 
             setQueryOptions(data.queries.map(i => i.userQuery));
             setDataSchema(JSON.stringify(data.dataSchema, null, 2));
             if (data.instructions) {
                 const _instructions = JSON.parse(data.instructions);
-                console.log(_instructions)
+
                 setQueryInstructions(_instructions.queryInstructions);
                 setRequeryInstructions(_instructions.requeryInstructions);
                 setDataInstructions(_instructions.dataInstructions);
@@ -121,6 +122,22 @@ export const useQueryState = (appName) => {
         }
     };
 
+    const handleDeleteOption = async (event, option) => {
+        console.log('Option selected:', option);
+
+        let remainingQueries = queries.filter(i => i.userQuery != option);
+        let remainingQueryOptions = queryOptions.filter(i => i != option);
+        setQueries(remainingQueries);
+        setQueryOptions(remainingQueryOptions);
+
+        await fetch(`/api/save-query?app=${appName}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userQuery: option}),
+        });
+        alert('Query deleted!');
+    }
+
 
     const makeChart = (data) => {
         console.log(data)
@@ -152,9 +169,15 @@ export const useQueryState = (appName) => {
         await fetch(`/api/save-query?app=${appName}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userQuery, userAnnotation: annotation, dbQuery, dbResult: chatResult }),
+            body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
         });
         alert('Query result saved!');
+
+        // reload just the queries
+        const data = await fetchInitialOptions(appName);      
+        setQueries(data.queries);
+        setQueryOptions(data.queries.map(i => i.userQuery));
+
     };
 
     const handleSaveData = async () => {
@@ -221,6 +244,7 @@ export const useQueryState = (appName) => {
         showDropdown,
         setShowDropdown,
         handleOptionSelect,
+        handleDeleteOption,
         setFocusedInput,
         getInputStyle,
         handleKeyDown

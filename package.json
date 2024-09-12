@@ -1,5 +1,5 @@
 {
-  "name": "qgen",
+  "name": "LLMQL",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,6 +12,7 @@
     "@apollo/client": "^3.11.5",
     "better-sqlite3": "^11.2.1",
     "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
     "dotenv": "^16.4.5",
     "graphql": "^16.9.0",
     "lucide-react": "^0.439.0",

@@ -1,5 +1,3 @@
-import instructions from '@/lib/constants/instructions';
-
 const rag = require('../../../lib/rag/sqlite3/rag');
 //const rag = require('../../../lib/rag/mongo/rag');
 
@@ -7,7 +5,7 @@ const rag = require('../../../lib/rag/sqlite3/rag');
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const dbName = searchParams.get('app');
-
+ try{
     let result = await rag.getSetup(dbName);
     console.log('example queries:');
     console.log(result);
@@ -20,7 +18,7 @@ export async function GET(request) {
         dataQuery: i.messages[1].content            
         }
     })*/
-           
+
     return new Response(JSON.stringify(
         {
             queries: result.queries,
@@ -31,4 +29,10 @@ export async function GET(request) {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     });
+} catch (ex) {
+    return new Response(JSON.stringify(null), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
 }

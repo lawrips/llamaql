@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.11.5",
+    "axios": "^1.7.7",
     "better-sqlite3": "^11.2.1",
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",

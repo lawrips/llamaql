@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult } from '../lib/utils/queryUtils';
+import { useRouter } from 'next/navigation';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
@@ -20,12 +21,18 @@ export const useQueryState = (appName) => {
     const [showDropdown, setShowDropdown] = useState('');
     const [queries, setQueries] = useState({});
     const [focusedInput, setFocusedInput] = useState(null);
+    const router = useRouter();
 
 
     useEffect(() => {
         const fetchInitialData = async () => {
             const data = await fetchInitialOptions(appName); 
+            console.log("data:")     
             console.log(data)     
+            if (!data) {
+                router.push('/upload');
+                return null;
+            }
             setQueries(data.queries);
 
             setQueryOptions(data.queries.map(i => i.userQuery));
@@ -40,11 +47,12 @@ export const useQueryState = (appName) => {
                 setInstructSubs(substitutions);
                 setCheckedItems(new Set(substitutions));
             }
-            const finetunes = await fetch(`/api/finetune?app=${appName}`).then(res => res.json());
+            // uncomment these lines below when you want finetunes back in the picture
+            //const finetunes = await fetch(`/api/finetune?app=${appName}`).then(res => res.json());
             setModels([
-                { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },
-                { value: "gpt-4o", label: "gpt-4o (higher quality)" },
-                ...finetunes.map(i => ({ label: `${i.name} (${i.status})`, value: i.name }))
+                { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },                
+                { value: "gpt-4o-2024-08-06", label: "gpt-4o-2024-08-06 (higher quality / higher cost)" },
+                //...finetunes.map(i => ({ label: `${i.name} (${i.status})`, value: i.name }))
             ]);            
         };
 

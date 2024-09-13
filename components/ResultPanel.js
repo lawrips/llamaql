@@ -1,22 +1,67 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import { LineChart, Line, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  ResponsiveContainer,
+  LineChart,
+  BarChart,
+  AreaChart,
+  RadarChart,
+  Line,
+  Bar,
+  Area,
+  Radar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from 'recharts';
 
 const colors = [
   '#F44336', // Red
   '#2196F3', // Blue
-  '#9C27B0', // Purple
+  '#FF9800', // Orange
   '#4CAF50', // Green
-  '#BB0000', // Deep Orange
-  '#795548', // Brown
-  '#3F51B5', // Indigo
   '#00BCD4', // Cyan
-  '#8BC34A', // Light Green
-  '#607D8B', // Blue Gray
+  '#FFCB2B', // Yellow
+  '#607D8B', // Blue Grey
+  '#9C27B0', // Purple
+  '#E91E63', // Pink
+  '#795548', // Brown
 ];
+
 
 const ResultPanel = ({ chatResult, chartData }) => {
   const [keys, setKeys] = useState([]);
+  const [chartType, setChartType] = useState('LineChart');
+
+
+  let ChartComponent;
+  let chartSpecificProps = {};
+
+  switch (chartType) {
+    case 'LineChart':
+      ChartComponent = LineChart;
+      break;
+    case 'BarChart':
+      ChartComponent = BarChart;
+      break;
+    case 'AreaChart':
+      ChartComponent = AreaChart;
+      break;
+    case 'StackedAreaChart':
+      ChartComponent = AreaChart;
+      break;
+    case 'RadarChart':
+      ChartComponent = RadarChart;
+      break;
+    default:
+      ChartComponent = LineChart;
+  }
+
 
   function generateNiceTicks(minVal, maxVal, maxTicks = 10) {
     // Handle the case where min and max are equal
@@ -135,41 +180,101 @@ const ResultPanel = ({ chatResult, chartData }) => {
         <TabPanel>
           <textarea
             value={chatResult}
-            rows={10}
+            rows={12}
             readOnly
             placeholder="Natural Language Result"
             style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
           />
         </TabPanel>
         <TabPanel>
-          <ResponsiveContainer className="chart" width="100%" height={600} marginBottom={100}>
-            <br />
-            <BarChart
-              width={500}
-              height={300}
-              data={chartData}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 100,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis interval={0} width={40} tick={{
-                width: 20,
-                fill: '#666',
-              }} dataKey="xVal" />
-              <YAxis ticks={ticks} domain={[niceMin, niceMax]} />
-              <Tooltip />
-              <Legend />
+          <div>
+            <div className="flex w-1/4 gap-4 p-4" style={{ minHeight: '50px' }}>
 
-              {/* Dynamically generate <Bar> components based on the keys */}
-              {keys.map((key, index) => (
-                <Bar key={key} dataKey={key} fill={colors[index % colors.length]} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+              <select value={chartType} onChange={(e) => setChartType(e.target.value)}>
+                <option value="LineChart">Line Chart</option>
+                <option value="BarChart">Bar Chart</option>
+                <option value="AreaChart">Area Chart</option>
+                <option value="StackedAreaChart">Stacked Area Chart</option> {/* Added this line */}
+                <option value="RadarChart">Radar Chart</option>
+              </select>
+              <br />
+            </div>
+
+            <ResponsiveContainer width="100%" height={600}>
+              {chartType !== 'RadarChart' ? (
+                <ChartComponent
+                  data={chartData}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 100,
+                  }}
+                  {...chartSpecificProps}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="xVal"
+                    tick={{
+                      width: 20,
+                      fill: '#666',
+                    }}
+                  />
+                  <YAxis ticks={ticks} domain={[niceMin, niceMax]} />
+                  <Tooltip />
+                  <Legend />
+
+                  {/* Conditionally render data components based on chart type */}
+                  {keys.map((key, index) => {
+                    const color = colors[index % colors.length];
+                    switch (chartType) {
+                      case 'LineChart':
+                        return <Line key={key} type="monotone" dataKey={key} stroke={color} strokeWidth={2} />;
+                      case 'BarChart':
+                        return <Bar key={key} dataKey={key} fill={color} />;
+                      case 'AreaChart':
+                        return <Area key={key} type="monotone" dataKey={key} stroke={color} fill={color} />;
+                      case 'StackedAreaChart':
+                        return <Area key={key} type="monotone" dataKey={key} stackId="1" stroke={color} fill={color} />;
+                      default:
+                        return null;
+                    }
+                  })}
+                </ChartComponent>
+              ) : (
+                // Special handling for RadarChart
+                <RadarChart
+                  data={chartData}
+                  outerRadius={150}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="xVal" />
+                  <PolarRadiusAxis angle={30} domain={[niceMin, niceMax]} />
+                  <Tooltip />
+                  <Legend />
+                  {keys.map((key, index) => {
+                    const color = colors[index % colors.length];
+                    return (
+                      <Radar
+                        key={key}
+                        name={key}
+                        dataKey={key}
+                        stroke={color}
+                        fill={color}
+                        fillOpacity={0.6}
+                      />
+                    );
+                  })}
+                </RadarChart>
+              )}
+            </ResponsiveContainer>
+          </div>
         </TabPanel>
       </Tabs>
     </div>

@@ -48,7 +48,7 @@ const InstructionPanel = ({
                   value={dbQuery}
                   placeholder="Data Query"
                   onChange={(e) => setDbQuery(e.target.value)}
-                  rows={10}
+                  rows={8}
                   style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap'  }}
                 />&nbsp;&nbsp;
                 <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>&gt;</button>

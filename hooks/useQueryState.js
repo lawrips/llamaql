@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 
@@ -21,14 +21,15 @@ export const useQueryState = (appName) => {
     const [showDropdown, setShowDropdown] = useState('');
     const [queries, setQueries] = useState({});
     const [focusedInput, setFocusedInput] = useState(null);
+    const fileInputRef = useRef(null);
     const router = useRouter();
 
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const data = await fetchInitialOptions(appName); 
-            console.log("data:")     
-            console.log(data)     
+            const data = await fetchInitialOptions(appName);
+            console.log("data:")
+            console.log(data)
             if (!data) {
                 router.push('/upload');
                 return null;
@@ -50,10 +51,10 @@ export const useQueryState = (appName) => {
             // uncomment these lines below when you want finetunes back in the picture
             //const finetunes = await fetch(`/api/finetune?app=${appName}`).then(res => res.json());
             setModels([
-                { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },                
+                { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },
                 { value: "gpt-4o-2024-08-06", label: "gpt-4o-2024-08-06 (higher quality / higher cost)" },
                 //...finetunes.map(i => ({ label: `${i.name} (${i.status})`, value: i.name }))
-            ]);            
+            ]);
         };
 
         fetchInitialData();
@@ -122,7 +123,7 @@ export const useQueryState = (appName) => {
             setAnnotation(matchedQuery.userAnnotation);
             setDbQuery(matchedQuery.dbQuery);
             //setFocusedInput(null);
-            
+
             if (matchedQuery.dbResult) {
                 setChatResult(matchedQuery.dbResult);
                 makeChart(matchedQuery.dbResult);
@@ -141,7 +142,7 @@ export const useQueryState = (appName) => {
         await fetch(`/api/save-query?app=${appName}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userQuery: option}),
+            body: JSON.stringify({ userQuery: option }),
         });
         alert('Query deleted!');
     }
@@ -182,10 +183,9 @@ export const useQueryState = (appName) => {
         alert('Query result saved!');
 
         // reload just the queries
-        const data = await fetchInitialOptions(appName);      
+        const data = await fetchInitialOptions(appName);
         setQueries(data.queries);
         setQueryOptions(data.queries.map(i => i.userQuery));
-
     };
 
     const handleSaveData = async () => {
@@ -198,8 +198,63 @@ export const useQueryState = (appName) => {
     };
 
     const handleExportJsonl = async () => {
-        await fetch(`/api/export-json?app=${appName}`, { method: 'POST' });
-        alert('Export done!');
+        console.log(appName)
+        let response = await fetch(`/api/export-json?app=${appName}`, { method: 'POST' });
+        const blob = await response.blob(); // Convert response to a Blob
+        const url = window.URL.createObjectURL(blob); // Create URL for the Blob
+
+        // Create a temporary download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${appName}_export.jsonl`; // Specify the filename for download
+        document.body.appendChild(link);
+        link.click(); // Programmatically click the link to trigger the download
+        link.remove(); // Remove the link after triggering the download
+
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleImportJsonl = () => {
+        fileInputRef.current.click();  // Trigger the file input click
+    };
+
+    const handleFileChange = (event) => {
+        const file = event.target.files[0]; // Access the uploaded file
+
+        if (file) {
+            const reader = new FileReader();
+
+            // Define the callback to execute when the file is read
+            reader.onload = async (e) => {
+                const fileContents = e.target.result;
+                const json = fileContents.trim().split('\n').map(line => JSON.parse(line));
+
+                for (const item of json) {
+                    let _userMessage = item.messages.filter(i => i.role == 'user');
+
+                    console.log(item)
+                    await fetch(`/api/save-query?app=${appName}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userQuery: _userMessage[0].content.trim(), userAnnotation: _userMessage[1].content.replace('[Annotation]: ', '').trim(),
+                            dbQuery: item.messages.filter(i => i.role == 'assistant')[0].content, dbResult: null }),
+                    });
+                }
+
+                // reload just the queries
+                const data = await fetchInitialOptions(appName);
+                setQueries(data.queries);
+                setQueryOptions(data.queries.map(i => i.userQuery));
+
+                alert('Data imported!');
+
+
+            };
+
+            // Read the file as text
+            reader.readAsText(file);
+        }
     };
 
     const handleFinetune = async () => {
@@ -207,7 +262,7 @@ export const useQueryState = (appName) => {
         alert('Finetuning started!');
     };
 
-    
+
     const getInputStyle = (inputType) => {
         const baseStyle = {
             transition: 'all 300ms ease-in-out',
@@ -248,6 +303,9 @@ export const useQueryState = (appName) => {
         handleSaveQuery,
         handleSaveData,
         handleExportJsonl,
+        handleImportJsonl,
+        handleFileChange,
+        fileInputRef,
         handleFinetune,
         showDropdown,
         setShowDropdown,

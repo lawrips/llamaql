@@ -25,7 +25,7 @@ const InstructionPanel = ({
   };
 
   return (
-    <div style={{ marginTop: '20px' }}>
+    <div>
       <Tabs>
         <div className="tab-container">
           <TabList>
@@ -43,7 +43,7 @@ const InstructionPanel = ({
         {isOpen && (
           <div className="content">
             <TabPanel>
-              <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 <textarea
                   value={dbQuery}
                   placeholder="Data Query"
@@ -60,7 +60,7 @@ const InstructionPanel = ({
                   value={queryInstructions}
                   placeholder="Query Instructions"
                   onChange={(e) => setQueryInstructions(e.target.value)}
-                  rows={10}
+                  rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -86,7 +86,7 @@ const InstructionPanel = ({
                   value={requeryInstructions}
                   placeholder="Requery Instructions"
                   onChange={(e) => setRequeryInstructions(e.target.value)}
-                  rows={10}
+                  rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -112,7 +112,7 @@ const InstructionPanel = ({
                   value={dataInstructions}
                   placeholder="Data Instructions"
                   onChange={(e) => setDataInstructions(e.target.value)}
-                  rows={10}
+                  rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
               </div>
@@ -122,7 +122,7 @@ const InstructionPanel = ({
                 value={dataSchema}
                 placeholder="Data Schema"
                 onChange={(e) => setDataSchema(e.target.value)}
-                rows={10}
+                rows={8}
                 style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
               />&nbsp;
             </TabPanel>

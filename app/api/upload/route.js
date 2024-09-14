@@ -13,7 +13,7 @@ export async function POST(request) {
   const contents = await request.json();
 
   if (dbName) {
-    const db = new Database(`./db/${dbName}.db`, {fileMustExist: true});
+    const db = new Database(`./db/${dbName}.db`);
     db.pragma('journal_mode = WAL');
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
@@ -34,6 +34,7 @@ export async function POST(request) {
     let result = await insertData(db, contents);
     await createSchema(db);
     await createSetup(db);
+    db.close();
 
     return new Response(
       JSON.stringify(
@@ -69,15 +70,15 @@ export async function GET(request) {
   if (dbFiles.length > 0) {
 
     try {
-      dbFiles.forEach((file) => {
-        const db = new Database(`./db/${file}`, {fileMustExist: true});
+      for (const file of dbFiles) {
+        const db = new Database(`./db/${file}`, { fileMustExist: true });
         db.pragma('journal_mode = WAL');
         const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
         let count = stmt.all();
         console.log(count)
         db.close();
-        data.push({file: file.replace(".db",""), count: count[0].rowCount});
-      });
+        data.push({ file: file.replace(".db", ""), count: count[0].rowCount });
+      }
 
     } catch (ex) {
       console.log(ex);

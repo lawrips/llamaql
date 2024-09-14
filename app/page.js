@@ -49,6 +49,9 @@ export default function Home() {
         handleSaveQuery,
         handleSaveData,
         handleExportJsonl,
+        handleImportJsonl,
+        fileInputRef,
+        handleFileChange,
         handleFinetune,
         queryInstructions,
         setQueryInstructions,
@@ -71,9 +74,9 @@ export default function Home() {
     return (
         <div style={{ padding: "10px" }}>
             <div className="col-span-2">
-                <h3 className="text-xl font-bold mb-2">LLMQL (v0.1)</h3>
+                <h3 className="text-xl font-bold mb-2"><a href="/upload">llamaql (v0.1)</a></h3>
             </div>
-            <div className="flex w-full gap-4 p-4" style={{ minHeight: '50px' }}>
+            <div className="flex w-full gap-4 p-4" >
 
 
                 <QueryInput
@@ -96,8 +99,8 @@ export default function Home() {
                     getInputStyle={getInputStyle}
                 />
             </div>
-            <div className="flex w-full gap-4 p-4" style={{ minHeight: '50px' }}>
-                <ModelSelector
+            <div className="flex w-full gap-4 pl-4 pr-4 pb-4">
+            <ModelSelector
                     selectedModel={selectedModel}
                     setSelectedModel={setSelectedModel}
                     models={models}
@@ -138,7 +141,10 @@ export default function Home() {
                 handleSaveQuery={handleSaveQuery}
                 handleSaveData={handleSaveData}
                 handleExportJsonl={handleExportJsonl}
+                handleImportJsonl={handleImportJsonl}
                 handleFinetune={handleFinetune}
+                fileInputRef={fileInputRef}
+                handleFileChange={handleFileChange}
             />
 
             <LoadingOverlay loading={loading} />

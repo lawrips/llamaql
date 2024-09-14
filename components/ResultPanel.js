@@ -170,8 +170,6 @@ const ResultPanel = ({ chatResult, chartData }) => {
 
   return (
     <div>
-      <hr />
-      <br />
       <Tabs>
         <TabList>
           <Tab>Chat</Tab>
@@ -180,7 +178,7 @@ const ResultPanel = ({ chatResult, chartData }) => {
         <TabPanel>
           <textarea
             value={chatResult}
-            rows={12}
+            rows={10}
             readOnly
             placeholder="Natural Language Result"
             style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}

@@ -7,6 +7,7 @@ const rag = require('../../../lib/rag/sqlite3/rag');
 export async function POST(request) {
   const body = await request.json();
   let input = body.input;
+  let annotation = body.annotation;
   let instructions = body.instructions;
   let schema = body.schema;
   let requery = body.requery;
@@ -16,7 +17,7 @@ export async function POST(request) {
 
   console.log("****** NEW QUERY REQUEST ******** ")
 
-  let result = await rag.query(input, model, instructions, schema, dbName, requery || null);
+  let result = await rag.query(input, annotation, model, instructions, schema, dbName, requery || null);
 
   if (result.error == null) {
     return new Response(

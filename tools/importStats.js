@@ -101,7 +101,7 @@ async function main() {
 
     try {
         await client.connect();
-        const collection = client.db('LLMQL').collection('query_data');
+        const collection = client.db('llamaql').collection('query_data');
         await collection.deleteMany();
 
         const draftPricesFilePath = '../db/draft_price.csv';

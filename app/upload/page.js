@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-import DragAndDrop from '../../lib/components/DragAndDrop';
+import DragAndDrop from '../../components/DragAndDrop';
 
 export default function Home() {
   const [result, setResult] = useState(null);

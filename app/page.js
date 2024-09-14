@@ -37,6 +37,8 @@ export default function Home() {
         setDbQuery,
         chatResult,
         chartData,
+        chartTicks,
+        chartKeys,
         selectedModel,
         setSelectedModel,
         loading,
@@ -135,6 +137,8 @@ export default function Home() {
             <ResultPanel
                 chatResult={chatResult}
                 chartData={chartData}
+                chartTicks={chartTicks}
+                chartKeys={chartKeys}
             />
 
             <ActionButtons

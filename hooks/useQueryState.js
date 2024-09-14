@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
+import { generateNiceTicks } from '../lib/utils/graphUtils';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
@@ -21,6 +22,8 @@ export const useQueryState = (appName) => {
     const [showDropdown, setShowDropdown] = useState('');
     const [queries, setQueries] = useState({});
     const [focusedInput, setFocusedInput] = useState(null);
+    const [chartTicks, setChartTicks] = useState({});
+    const [chartKeys, setChartKeys] = useState([]);
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -158,6 +161,40 @@ export const useQueryState = (appName) => {
         console.log(extractCode(data))
         let _chartData = JSON.parse(extractCode(data));
         if (_chartData) {
+
+            if (_chartData.length === 0) {
+                setChartTicks({ ticks: [], niceMin: 0, niceMax: 0 });
+                return;
+            }
+
+            // yAxis presentation
+            try {
+                // Step 1: Identify all Y-series keys dynamically (exclude 'xVal')
+                const yKeys = Object.keys(_chartData[0]).filter(key => key !== 'xVal');
+
+                // Step 2: Aggregate all Y-values from all Y-series
+                const yValues = _chartData.flatMap(dataPoint =>
+                    yKeys
+                        .map(key => Number(dataPoint[key]))
+                        .filter(value => !isNaN(value))
+                );
+
+                // Handle case where there are no valid Y-values
+                if (yValues.length === 0) return { ticks: [], niceMin: 0, niceMax: 0 };
+
+                // Step 3: Compute min and max with scaling factors
+                const minVal = Math.min(...yValues) * 0.95;
+                const maxVal = Math.max(...yValues) * 1.05;
+
+                // Step 4: Generate "nice" ticks
+                let { ticks, niceMin, niceMax } = generateNiceTicks(minVal, maxVal, 10);
+                setChartTicks({ ticks, niceMin, niceMax });
+                setChartKeys(yKeys);
+            } catch (ex) {
+                console.log('error doing nicetick calculation')
+                console.log(ex);
+            }
+
             setChartData(_chartData);
         }
     };
@@ -237,8 +274,10 @@ export const useQueryState = (appName) => {
                     await fetch(`/api/save-query?app=${appName}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userQuery: _userMessage[0].content.trim(), userAnnotation: _userMessage[1].content.replace('[Annotation]: ', '').trim(),
-                            dbQuery: item.messages.filter(i => i.role == 'assistant')[0].content, dbResult: null }),
+                        body: JSON.stringify({
+                            userQuery: _userMessage[0].content.trim(), userAnnotation: _userMessage[1].content.replace('[Annotation]: ', '').trim(),
+                            dbQuery: item.messages.filter(i => i.role == 'assistant')[0].content, dbResult: null
+                        }),
                     });
                 }
 
@@ -282,6 +321,8 @@ export const useQueryState = (appName) => {
         setDbQuery,
         chatResult,
         chartData,
+        chartTicks,
+        chartKeys,
         selectedModel,
         setSelectedModel,
         loading,

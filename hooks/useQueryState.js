@@ -234,6 +234,16 @@ export const useQueryState = (appName) => {
         setQueryOptions(data.queries.map(i => i.userQuery));
     };
 
+    const handleSaveInstructions = async () => {
+        await fetch(`/api/instructions?app=${appName}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataInstructions, queryInstructions, requeryInstructions, dataSchema }),
+        });
+        // show confirmation dialog
+        setDialogOpen(true);
+    };
+
     const handleSaveData = async () => {
         await fetch(`/api/save-data?app=${appName}`, {
             method: 'POST',
@@ -366,6 +376,7 @@ export const useQueryState = (appName) => {
         getInputStyle,
         handleKeyDown,
         dialogOpen,
-        handleDialogClose
+        handleDialogClose,
+        handleSaveInstructions
     };
 };

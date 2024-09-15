@@ -16,7 +16,8 @@ const InstructionPanel = ({
   instructSubs,
   checkedItems,
   handleInstructSubChange,
-  handleDirectQuery
+  handleDirectQuery,
+  handleSaveInstructions
 }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -77,7 +78,7 @@ const InstructionPanel = ({
                       </label>
                     </div>
                   ))}
-                  <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+                  <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
                 </div>
               </div>
             </TabPanel>
@@ -105,7 +106,7 @@ const InstructionPanel = ({
                     </div>
 
                   ))}
-                  <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+                  <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
 
                 </div>
               </div>
@@ -119,7 +120,7 @@ const InstructionPanel = ({
                   rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
-                <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+                <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
               </div>
 
             </TabPanel>
@@ -133,7 +134,7 @@ const InstructionPanel = ({
                   rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
-                <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+                <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
               </div>
 
             </TabPanel>

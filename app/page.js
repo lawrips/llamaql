@@ -74,7 +74,8 @@ export default function Home() {
         getInputStyle,
         handleKeyDown,
         dialogOpen,
-        handleDialogClose
+        handleDialogClose,
+        handleSaveInstructions
     } = useQueryState(appName);    
     
 
@@ -137,6 +138,7 @@ export default function Home() {
                 checkedItems={checkedItems}
                 handleInstructSubChange={handleInstructSubChange}
                 handleDirectQuery={handleDirectQuery}
+                handleSaveInstructions={handleSaveInstructions}
             />
 
             <ResultPanel

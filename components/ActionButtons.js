@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ActionButtons = ({ handleSaveQuery, handleSaveData, handleExportJsonl, handleImportJsonl, fileInputRef, handleFileChange, handleFinetune }) => {
+const ActionButtons = ({ handleSaveQuery, handleSaveData, handleExportJsonl, handleImportJsonl, fileInputRef, handleFileChange, handleFinetune,  }) => {
   return (
     <div>
       <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>

@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import TermsModal from '../../components/TermsModal'; 
 
 import DragAndDrop from '../../components/DragAndDrop';
 
@@ -69,7 +70,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Select or Upload a new DB</h1>
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Select or Upload a new CSV</h1>
 
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Option 1: Select a DB</h2>
@@ -78,12 +79,13 @@ export default function Home() {
             {dbFiles.map((item, index) => (
               <div key={index} className="border p-4 rounded shadow">
                 <span>
-                <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
-                <p><a href={`/?app=${item.file}`}>({item.count} rows)</a></p>
+                  <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
+                  <p><a href={`/?app=${item.file}`}>({item.count} rows)</a></p>
                 </span>
               </div>
             ))}
           </div>
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">OR</h2>
 
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Option 2: Upload a CSV</h2>
 
@@ -125,7 +127,10 @@ export default function Home() {
             </div>
           )}
         </div>
+        <br/>
+            By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
       </div>
+      <TermsModal />
     </div>
   );
 }

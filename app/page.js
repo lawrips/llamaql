@@ -12,6 +12,8 @@ import ActionButtons from '../components/ActionButtons';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import ModalDialog from '@/components/ModalDialog'; 
+import TermsModal from '@/components/TermsModal';
 
 export default function Home() {
     const router = useRouter();
@@ -70,8 +72,11 @@ export default function Home() {
         setShowDropdown,
         setFocusedInput,
         getInputStyle,
-        handleKeyDown
-    } = useQueryState(appName);
+        handleKeyDown,
+        dialogOpen,
+        handleDialogClose
+    } = useQueryState(appName);    
+    
 
     return (
         <div style={{ padding: "10px" }}>
@@ -150,8 +155,19 @@ export default function Home() {
                 fileInputRef={fileInputRef}
                 handleFileChange={handleFileChange}
             />
+            <br/>
+            By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
 
             <LoadingOverlay loading={loading} />
+            <TermsModal />
+            <ModalDialog
+                open={dialogOpen}
+                handleClose={handleDialogClose}
+                title="Success"
+                content={`Action completed successfuly!`}
+            />
+
+
         </div>
     );
 }

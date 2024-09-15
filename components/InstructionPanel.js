@@ -49,9 +49,9 @@ const InstructionPanel = ({
                   placeholder="Data Query"
                   onChange={(e) => setDbQuery(e.target.value)}
                   rows={8}
-                  style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap'  }}
+                  style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
                 />&nbsp;&nbsp;
-                <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>&gt;</button>
+                <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>Run</button>
               </div>
             </TabPanel>
             <TabPanel>
@@ -77,6 +77,7 @@ const InstructionPanel = ({
                       </label>
                     </div>
                   ))}
+                  <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
                 </div>
               </div>
             </TabPanel>
@@ -102,7 +103,10 @@ const InstructionPanel = ({
                         {item}
                       </label>
                     </div>
+
                   ))}
+                  <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+
                 </div>
               </div>
             </TabPanel>
@@ -115,16 +119,23 @@ const InstructionPanel = ({
                   rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
+                <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
               </div>
+
             </TabPanel>
             <TabPanel>
-              <textarea
-                value={dataSchema}
-                placeholder="Data Schema"
-                onChange={(e) => setDataSchema(e.target.value)}
-                rows={8}
-                style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
-              />&nbsp;
+              <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+
+                <textarea
+                  value={dataSchema}
+                  placeholder="Data Schema"
+                  onChange={(e) => setDataSchema(e.target.value)}
+                  rows={8}
+                  style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                />&nbsp;
+                <button onClick={handleDirectQuery} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
+              </div>
+
             </TabPanel>
           </div>
         )}

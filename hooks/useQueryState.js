@@ -24,6 +24,7 @@ export const useQueryState = (appName) => {
     const [focusedInput, setFocusedInput] = useState(null);
     const [chartTicks, setChartTicks] = useState({});
     const [chartKeys, setChartKeys] = useState([]);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -147,8 +148,13 @@ export const useQueryState = (appName) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: option }),
         });
-        alert('Query deleted!');
+        // show confirmation dialog
+        setDialogOpen(true);
     }
+
+    const handleDialogClose = () => {
+        setDialogOpen(false); // Close the modal
+    };
 
 
     const makeChart = (data) => {
@@ -217,7 +223,8 @@ export const useQueryState = (appName) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
         });
-        alert('Query result saved!');
+        // show confirmation dialog
+        setDialogOpen(true);
 
         // reload just the queries
         const data = await fetchInitialOptions(appName);
@@ -231,7 +238,8 @@ export const useQueryState = (appName) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: userQuery, data: chatResult }),
         });
-        alert('Chat result saved!');
+        // show confirmation dialog
+        setDialogOpen(true);
     };
 
     const handleExportJsonl = async () => {
@@ -286,9 +294,8 @@ export const useQueryState = (appName) => {
                 setQueries(data.queries);
                 setQueryOptions(data.queries.map(i => i.userQuery));
 
-                alert('Data imported!');
-
-
+                // show confirmation dialog
+                setDialogOpen(true);
             };
 
             // Read the file as text
@@ -298,7 +305,8 @@ export const useQueryState = (appName) => {
 
     const handleFinetune = async () => {
         await fetch(`/api/finetune?app=${appName}`, { method: 'POST' });
-        alert('Finetuning started!');
+        // show confirmation dialog
+        setDialogOpen(true);
     };
 
 
@@ -354,6 +362,8 @@ export const useQueryState = (appName) => {
         handleDeleteOption,
         setFocusedInput,
         getInputStyle,
-        handleKeyDown
+        handleKeyDown,
+        dialogOpen,
+        handleDialogClose
     };
 };

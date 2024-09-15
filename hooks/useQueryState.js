@@ -90,6 +90,7 @@ export const useQueryState = (appName) => {
                 makeChart(translatedData.data);
             } catch (error) {
                 console.error('Error during query:', error);
+                setChatResult(error);
             } finally {
                 setLoading(false);
             }
@@ -107,6 +108,7 @@ export const useQueryState = (appName) => {
             makeChart(translatedData.data);
         } catch (error) {
             console.error('Error during direct query:', error);
+            setChatResult(error);
         } finally {
             setLoading(false);
         }

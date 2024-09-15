@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 
-const ModalDialog = ({ open, handleClose, title, content }) => {
+const ModalDialog = ({ open, handleDialogClose, handleDialogCancel, title, content }) => {
 
   return (
     <Dialog
@@ -22,7 +22,8 @@ const ModalDialog = ({ open, handleClose, title, content }) => {
           dangerouslySetInnerHTML={{ __html: content }}
         />      </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>OK</Button>
+      <Button onClick={handleDialogClose}>OK</Button>
+      {handleDialogCancel ? <Button onClick={handleDialogCancel}>Cancel</Button> : null}
       </DialogActions>
     </Dialog>
   );

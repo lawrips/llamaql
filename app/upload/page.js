@@ -3,8 +3,9 @@
 
 
 import { useEffect, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import TermsModal from '../../components/TermsModal'; 
+import TermsModal from '@/components/TermsModal';
+import ModalDialog from '@/components/ModalDialog';
+import { X, Search } from 'lucide-react';
 
 import DragAndDrop from '../../components/DragAndDrop';
 
@@ -12,26 +13,15 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [fileContents, setFileContents] = useState('');
   const [appName, setAppName] = useState('');
-  const [dbFiles, setDbFiles] = useState([]);
+  const [dbFile, setDbFile] = useState([]); // for deletion
+  const [dbFiles, setDbFiles] = useState([]); // for display
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log('Component mounted or updated');
 
-    const load = async () => {
-      const response = await fetch(`/api/upload`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-
-      return data;
-    }
-
     const fetchData = async () => {
       const data = await load();
-      console.log(data);
       setDbFiles(data.data);
     };
 
@@ -64,8 +54,47 @@ export default function Home() {
         throw error;
       }
     }
-
   };
+
+  const deleteDb = async (dbName) => {
+    console.log('db clicked')
+    setDialogOpen(true);
+    setDbFile(dbName);
+  }
+
+
+
+  const handleDialogConfirm = async () => {
+    setDialogOpen(false);
+
+    const response = await fetch(`/api/db/${dbFile}`, {
+      method: 'DELETE',
+    });
+
+    const fetchData = async () => {
+      const data = await load();
+      setDbFiles(data.data);
+    };
+
+    fetchData();
+  }
+
+  const handleDialogCancel = async () => {
+    setDialogOpen(false);
+  }
+
+  const load = async () => {
+    const response = await fetch(`/api/upload`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await response.json();
+
+    return data;
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -77,10 +106,17 @@ export default function Home() {
 
           <div className="grid grid-cols-3 gap-4 p-4">
             {dbFiles.map((item, index) => (
-              <div key={index} className="border p-4 rounded shadow">
+              <div key={index} className="relative border p-4 rounded shadow">
                 <span>
-                  <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
-                  <p><a href={`/?app=${item.file}`}>({item.count} rows)</a></p>
+                  <center>
+                    <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
+                    <p><a href={`/?app=${item.file}`}>({item.count >= 1000000 ? (item.count / 1000000).toFixed(1) + 'm' : item.count >= 1000 ? (item.count / 1000).toFixed(0) + 'k' : item.count.toString()} rows)</a></p>
+                    <br />
+                    <X
+                      color="red"
+                      size={20}
+                      className="absolute top-0 right-0 text-gray-400 cursor-pointer" onClick={() => deleteDb(item.file)} />
+                  </center>
                 </span>
               </div>
             ))}
@@ -127,9 +163,16 @@ export default function Home() {
             </div>
           )}
         </div>
-        <br/>
-            By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
+        <br />
+        By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
       </div>
+      <ModalDialog
+        open={dialogOpen}
+        handleDialogClose={handleDialogConfirm}
+        handleDialogCancel={handleDialogCancel}
+        title="Confirmation"
+        content={`This will delete this database for all users. Continue?`}
+      />
       <TermsModal />
     </div>
   );

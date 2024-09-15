@@ -6,7 +6,6 @@ const path = require('path');
 const utils = require('../../../lib/utils/typeUtils');
 const instructions = require('../../../lib/constants/instructions')
 
-
 export async function POST(request) {
   const { searchParams } = new URL(request.url);
   const dbName = searchParams.get('app');

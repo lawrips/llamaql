@@ -164,7 +164,7 @@ export default function Home() {
             <TermsModal />
             <ModalDialog
                 open={dialogOpen}
-                handleClose={handleDialogClose}
+                handleDialogClose={handleDialogClose}
                 title="Success"
                 content={`Action completed successfuly!`}
             />

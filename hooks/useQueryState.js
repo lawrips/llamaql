@@ -158,6 +158,10 @@ export const useQueryState = (appName) => {
         setDialogOpen(false); // Close the modal
     };
 
+    const handleDialogCancel = () => {
+        setDialogOpen(false); // Close the modal
+    };
+
 
     const makeChart = (data) => {
         console.log(data)

@@ -14,12 +14,17 @@ const TermsModal = () => {
     setOpen(!cookie); // Set open to false if the cookie is found
   }, []);
 
-  const handleClose = () => {
+  const handleDialogClose = () => {
     // Set cookie to prevent the modal from showing again (cookie expires in 1 year)
     document.cookie = "termsAccepted=true; path=/; max-age=31536000"; 
     setIsCookieFound(true); // Mark the cookie as found
     setOpen(false); // Close the modal
   };
+
+  const handleDialogCancel = () => {
+    setOpen(false); // Close the modal
+  };
+
 
   return (
     <div>
@@ -27,7 +32,8 @@ const TermsModal = () => {
       {!isCookieFound && (
         <ModalDialog
           open={open}
-          handleClose={handleClose}
+          handleDialogClose={handleDialogClose}
+          handleDialogCancel={handleDialogCancel}
           title="Disclaimer"
           content={`This is an early research prototype. By using it, you agree to:<br/><br/>
             - You are responsible for the content you upload. Ensure you have the rights.<br/>

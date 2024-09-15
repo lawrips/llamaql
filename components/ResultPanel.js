@@ -147,7 +147,7 @@ const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
                 >
                   <PolarGrid />
                   <PolarAngleAxis dataKey="xVal" />
-                  <PolarRadiusAxis angle={30} domain={[niceMin, niceMax]} />
+                  <PolarRadiusAxis angle={30} domain={[chartTicks.niceMin, chartTicks.niceMax]} />
                   <Tooltip />
                   <Legend />
                   {chartKeys.map((key, index) => {

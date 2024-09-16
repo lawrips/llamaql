@@ -100,7 +100,7 @@ export default function HomeClient({ appName }) {
                     <button onClick={() => handleQuery(false)}>Query</button>
                 </div>
                 <div>
-                    <button onClick={() => handleQuery(true)}>Requery</button>
+                    <button onClick={() => handleQuery(true)}>Fix Query</button>
                 </div>
             </div>
 

@@ -65,7 +65,6 @@ export default function HomeClient({ appName }) {
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
 
-    console.log(session.user)
     if (session.user?.role == 'editor' || session.user?.role == 'admin') {
 
         return (

@@ -10,7 +10,7 @@ export async function POST(request) {
 
     let result = db.run(dbName, 'UPDATE instructions SET data = ?' ,JSON.stringify({queryInstructions, dataInstructions, requeryInstructions}));
     console.log(result.changes)
-    result = db.run(dbName, 'UPDATE data_schema SET schema = ?, example = ?' , [JSON.parse(dataSchema)[0].schema, JSON.parse(dataSchema)[0].example]);
+    result = db.run(dbName, 'UPDATE data_schema SET schema = ?, examples = ?' , [JSON.parse(dataSchema)[0].schema, JSON.parse(dataSchema)[0].examples]);
     console.log(result.changes)
 
 

@@ -7,8 +7,19 @@ export async function POST(request) {
     let json = await request.json();
     console.log(json);
 
-    let result = db.run(dbName, 'INSERT INTO queries (userQuery, userAnnotation, dbQuery, dbResult) VALUES (?, ?, ?, ?)', [json.userQuery, json.userAnnotation, json.dbQuery, json.dbResult]);
-    console.log(result.changes)
+    // treats userQuery as the primary key... if it's a duplicate userquery it'll overwrite
+    let result = db.run(dbName, `
+        INSERT INTO queries (userQuery, userAnnotation, dbQuery, dbResult) 
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(userQuery) 
+        DO UPDATE SET 
+          userAnnotation = excluded.userAnnotation, 
+          dbQuery = excluded.dbQuery, 
+          dbResult = excluded.dbResult
+          WHERE queries.userQuery = excluded.userQuery`,
+        [json.userQuery, json.userAnnotation, json.dbQuery, json.dbResult]);
+
+        console.log(result.changes)
 
     return new Response(JSON.stringify({ message: 'Query result saved' }), {
         status: 200,

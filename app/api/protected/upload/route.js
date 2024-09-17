@@ -113,20 +113,18 @@ const createSetup = async (db) => {
   db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions)]);
   console.log('created instructions')
 
-  //db.exec(`CREATE TABLE queries (data TEXT);`);
-  db.exec(`CREATE TABLE queries (userQuery TEXT, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
+  db.exec(`CREATE TABLE queries (id INTEGER PRIMARY KEY, userQuery TEXT UNIQUE, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
 
   console.log('created queries')
 
-  db.exec(`CREATE TABLE saved_data (data TEXT);`);
+  db.exec(`CREATE TABLE saved_data (id INTEGER PRIMARY KEY, data TEXT);`);
   console.log('created saved_data')
 }
 
 const createSchema = async (db) => {
 
   db.exec(`
-      CREATE TABLE data_schema (
-        schema TEXT, example TEXT
+      CREATE TABLE data_schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT
       );
     `);
 
@@ -143,7 +141,7 @@ const createSchema = async (db) => {
 
 
   // Insert the text row
-  db.prepare('INSERT INTO data_schema (schema, example) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData[0])]);
+  db.prepare('INSERT INTO data_schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0,5))]);
 
   console.log('created schema')
 }
@@ -163,7 +161,7 @@ const createTable = async (db, parsedData) => {
   console.log(columns)
   const createStmt = `CREATE TABLE query_data (${columns})`;
   db.exec(createStmt);
-  console.log('tale created')
+  console.log('table created')
 };
 
 const insertData = async (db, data) => {

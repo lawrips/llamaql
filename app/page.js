@@ -6,9 +6,13 @@ import { redirect } from 'next/navigation';
 
 import HomeClient from './HomeClient.js';
 import withAuth from "./hoc/withAuth.js";
+import { useSearchParams } from 'next/navigation';
 
-function Home({ searchParams }) {
-    const appName = searchParams.app;
+
+function Home() {
+    const searchParams = useSearchParams(); // Use the hook to access query params
+    const appName = searchParams.get('app'); // Get the 'app' parameter
+    
     const { data: session } = useSession(); // Get session data
 
     if (!appName) {

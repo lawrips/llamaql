@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSession, signOut } from "next-auth/react";
+import { redirect } from 'next/navigation';
 
 import HomeClient from './HomeClient.js';
 import withAuth from "./hoc/withAuth.js";

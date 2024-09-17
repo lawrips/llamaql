@@ -1,9 +1,7 @@
 const { MongoClient } = require('mongodb');
 
-//const rag = require('../../../lib/rag/mongo/rag');
-//const mongo = require('../../../lib/services/mongo')
-const rag = require('../../../lib/rag/sqlite3/rag');
-const db = require('../../../lib/services/sql')
+const rag = require('@/lib/rag/sqlite3/rag');
+const db = require('@/lib/services/sql')
 
 
 export async function POST(request) {

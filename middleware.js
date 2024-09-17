@@ -1,37 +1,39 @@
 // middleware.js
-import { NextResponse } from 'next/server';
 
-// Base64 encode the username:password (for example: user:pass -> dXNlcjpwYXNz)
-const basicAuth = Buffer.from(`${process.env.BASIC_USER}:${process.env.BASIC_PASS}`).toString('base64');
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 
-// This middleware function will intercept requests
-export function middleware(req) {
-  // Get the Authorization header
-  const authHeader = req.headers.get('authorization');
+// Define the secret for NextAuth JWT
+const secret = process.env.NEXTAUTH_SECRET;
 
-  // If no Authorization header is provided, return a 401 Unauthorized response
-  if (!authHeader) {
-    return new NextResponse('Authentication required', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Secure Area"',
-      },
-    });
+export async function middleware(req) {
+  // Get the token from the request using the secret
+  const token = await getToken({ req, secret });
+
+  // Get the requested path from the URL
+  const { pathname } = req.nextUrl;
+
+  // Allow the request if the token exists or it's a request to certain public paths
+  if (token || pathname.startsWith("/api/public")) {
+    return NextResponse.next(); // Allow access to the route
   }
 
-  // Get the credentials from the Authorization header
-  const auth = authHeader.split(' ')[1];
-
-  // If the credentials are incorrect, return a 401 Unauthorized response
-  if (auth !== basicAuth) {
-    return new NextResponse('Invalid credentials', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Secure Area"',
-      },
-    });
+  // If no token is found, block the request and return an error or redirect to login
+  if (!token && pathname.startsWith("/api")) {
+    return NextResponse.json(
+      { error: "You must be logged in to access this API route" },
+      { status: 401 }
+    );
   }
 
-  // Allow the request to proceed if the credentials are correct
-  return NextResponse.next();
+  // Redirect unauthenticated requests to the sign-in page for non-API routes
+  if (!token) {
+    return NextResponse.redirect(new URL("/auth/signin", req.url));
+  }
 }
+
+export const config = {
+  matcher: [
+    "/api/protected/:path*", // Protect all API routes under /api/protected/*
+  ],
+};

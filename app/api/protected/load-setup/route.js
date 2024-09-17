@@ -1,6 +1,4 @@
-const rag = require('../../../lib/rag/sqlite3/rag');
-//const rag = require('../../../lib/rag/mongo/rag');
-
+const rag = require('@/lib/rag/sqlite3/rag');
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);

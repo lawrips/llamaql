@@ -1,5 +1,5 @@
 //import { finetune } from '@/lib/services/finetune';
-const finetune = require('../../../lib/services/finetune')
+const finetune = require('@/lib/services/finetune')
 const OpenAI = require('openai');
 
 const openai = new OpenAI({

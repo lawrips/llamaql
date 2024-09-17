@@ -3,8 +3,8 @@ const Papa = require('papaparse');
 const fs = require('fs');
 const path = require('path');
 
-const utils = require('../../../lib/utils/typeUtils');
-const instructions = require('../../../lib/constants/instructions')
+const utils = require('@/lib/utils/typeUtils');
+const instructions = require('@/lib/constants/instructions')
 
 export async function POST(request) {
   const { searchParams } = new URL(request.url);

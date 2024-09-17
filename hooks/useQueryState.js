@@ -53,7 +53,7 @@ export const useQueryState = (appName) => {
                 setCheckedItems(new Set(substitutions));
             }
             // uncomment these lines below when you want finetunes back in the picture
-            //const finetunes = await fetch(`/api/finetune?app=${appName}`).then(res => res.json());
+            //const finetunes = await fetch(`/api/protected/finetune?app=${appName}`).then(res => res.json());
             setModels([
                 { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },
                 { value: "gpt-4o-2024-08-06", label: "gpt-4o-2024-08-06 (higher quality / higher cost)" },
@@ -145,7 +145,7 @@ export const useQueryState = (appName) => {
         setQueries(remainingQueries);
         setQueryOptions(remainingQueryOptions);
 
-        await fetch(`/api/save-query?app=${appName}`, {
+        await fetch(`/api/protected/save-query?app=${appName}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: option }),
@@ -224,7 +224,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveQuery = async () => {
-        await fetch(`/api/save-query?app=${appName}`, {
+        await fetch(`/api/protected/save-query?app=${appName}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
@@ -239,7 +239,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveInstructions = async () => {
-        await fetch(`/api/instructions?app=${appName}`, {
+        await fetch(`/api/protected/instructions?app=${appName}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dataInstructions, queryInstructions, requeryInstructions, dataSchema }),
@@ -249,7 +249,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveData = async () => {
-        await fetch(`/api/save-data?app=${appName}`, {
+        await fetch(`/api/protected/save-data?app=${appName}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: userQuery, data: chatResult }),
@@ -260,7 +260,7 @@ export const useQueryState = (appName) => {
 
     const handleExportJsonl = async () => {
         console.log(appName)
-        let response = await fetch(`/api/export-json?app=${appName}`, { method: 'POST' });
+        let response = await fetch(`/api/protected/export-json?app=${appName}`, { method: 'POST' });
         const blob = await response.blob(); // Convert response to a Blob
         const url = window.URL.createObjectURL(blob); // Create URL for the Blob
 
@@ -295,7 +295,7 @@ export const useQueryState = (appName) => {
                     let _userMessage = item.messages.filter(i => i.role == 'user');
 
                     console.log(item)
-                    await fetch(`/api/save-query?app=${appName}`, {
+                    await fetch(`/api/protected/save-query?app=${appName}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -320,7 +320,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleFinetune = async () => {
-        await fetch(`/api/finetune?app=${appName}`, { method: 'POST' });
+        await fetch(`/api/protected/finetune?app=${appName}`, { method: 'POST' });
         // show confirmation dialog
         setDialogOpen(true);
     };

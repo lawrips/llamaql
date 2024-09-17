@@ -3,19 +3,22 @@
 
 
 import { useEffect, useState } from 'react';
+import { useSession, signOut } from "next-auth/react";
+import { X } from 'lucide-react';
+
 import TermsModal from '@/components/TermsModal';
 import ModalDialog from '@/components/ModalDialog';
-import { X, Search } from 'lucide-react';
-
+import withAuth from "../hoc/withAuth";
 import DragAndDrop from '../../components/DragAndDrop';
 
-export default function Home() {
+function UploadPage() {
   const [result, setResult] = useState(null);
   const [fileContents, setFileContents] = useState('');
   const [appName, setAppName] = useState('');
   const [dbFile, setDbFile] = useState([]); // for deletion
   const [dbFiles, setDbFiles] = useState([]); // for display
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { data: session } = useSession(); // Get session data
 
   useEffect(() => {
     console.log('Component mounted or updated');
@@ -34,7 +37,7 @@ export default function Home() {
       setFileContents(contents);
 
       try {
-        const response = await fetch(`/api/upload?app=${appName}`, {
+        const response = await fetch(`/api/protected/upload?app=${appName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -67,7 +70,7 @@ export default function Home() {
   const handleDialogConfirm = async () => {
     setDialogOpen(false);
 
-    const response = await fetch(`/api/db/${dbFile}`, {
+    const response = await fetch(`/api/protected/db/${dbFile}`, {
       method: 'DELETE',
     });
 
@@ -84,7 +87,7 @@ export default function Home() {
   }
 
   const load = async () => {
-    const response = await fetch(`/api/upload`, {
+    const response = await fetch(`/api/protected/upload`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -96,9 +99,27 @@ export default function Home() {
   }
 
 
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center mb-2"> 
+        {/* Title aligned to the left */}
+        <h1 className="text-2xl font-bold">
+          <a href="/upload">llamaql (v0.1)</a>
+        </h1>
+
+        {/* User's name and logout button aligned to the right */}
+        <div className="flex items-center space-x-4">
+          <p className="text-lg">Welcome, {session.user?.name}!</p>
+          <button
+            onClick={() => signOut()}
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+      <div className="w-3/4 max-w-2xl mx-auto bg-white p-6 rounded-md shadow-md">
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">Select or Upload a new CSV</h1>
 
         <div className="space-y-6">
@@ -174,6 +195,8 @@ export default function Home() {
         content={`This will delete this database for all users. Continue?`}
       />
       <TermsModal />
-    </div>
+    </div >
   );
 }
+
+export default withAuth(UploadPage);

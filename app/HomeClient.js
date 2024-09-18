@@ -141,7 +141,7 @@ export default function HomeClient({ appName }) {
                     handleFileChange={handleFileChange}
                 />
                 <br />
-                By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
+                By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
 
                 <LoadingOverlay loading={loading} />
                 <TermsModal />
@@ -211,7 +211,7 @@ export default function HomeClient({ appName }) {
                     handleFileChange={handleFileChange}
                 />
                 <br />
-                By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
+                By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
 
                 <LoadingOverlay loading={loading} />
                 <TermsModal />

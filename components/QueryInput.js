@@ -40,7 +40,7 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                             >
                                 <span className="flex-grow">{option}</span>
                                 <X
-                                    color="red"
+                                    color="gray"
                                     size={24}
                                     className="text-gray-400 cursor-pointer"
                                     onMouseDown={(e) => {

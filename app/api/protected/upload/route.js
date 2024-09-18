@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 const Papa = require('papaparse');
 const fs = require('fs');
 const path = require('path');
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 
 const utils = require('@/lib/utils/typeUtils');
 const instructions = require('@/lib/constants/instructions')
@@ -12,12 +14,15 @@ export async function POST(request) {
   const contents = await request.json();
 
   if (dbName) {
-    const db = new Database(`./db/${dbName}.db`);
+    const session = await getServerSession(authOptions);
+    const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
+  
+    const db = new Database(`${directoryPath}${dbName}.db`);
     db.pragma('journal_mode = WAL');
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
     db.exec(`DROP TABLE IF EXISTS data_schema`);
-    db.exec(`DROP TABLE IF EXISTS queries`);
+    //db.exec(`DROP TABLE IF EXISTS queries`);
     db.exec(`DROP TABLE IF EXISTS saved_data`);
     db.exec(`DROP TABLE IF EXISTS instructions`);
     console.log(`Tables have been dropped.`);
@@ -59,7 +64,8 @@ export async function POST(request) {
 
 export async function GET(request) {
   // Read and Filter .db files
-  const directoryPath = path.join(process.cwd(), 'db');
+  const session = await getServerSession(authOptions);
+  const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
   let files = fs.readdirSync(directoryPath);
   const dbFiles = files.filter(file => path.extname(file) === '.db');
   console.log(dbFiles);
@@ -70,7 +76,7 @@ export async function GET(request) {
 
     try {
       for (const file of dbFiles) {
-        const db = new Database(`./db/${file}`, { fileMustExist: true });
+        const db = new Database(`${directoryPath}${file}`, { fileMustExist: true });
         db.pragma('journal_mode = WAL');
         const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
         let count = stmt.all();
@@ -113,7 +119,7 @@ const createSetup = async (db) => {
   db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions)]);
   console.log('created instructions')
 
-  db.exec(`CREATE TABLE queries (id INTEGER PRIMARY KEY, userQuery TEXT UNIQUE, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
+  db.exec(`CREATE TABLE IF NOT EXISTS queries (id INTEGER PRIMARY KEY, userQuery TEXT UNIQUE, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
 
   console.log('created queries')
 

@@ -35,7 +35,7 @@ const TermsModal = () => {
           handleDialogClose={handleDialogClose}
           handleDialogCancel={handleDialogCancel}
           title="Disclaimer"
-          content={`This is an early research prototype. By using it, you agree to:<br/><br/>
+          content={`This is an prototype preview. By using it, you agree to:<br/><br/>
             - You are responsible for the content you upload. Ensure you have the rights.<br/>
             - Uploaded data and queries will be processed by third-party APIs (e.g., OpenAI).<br/>
             - We are not liable for any direct, indirect, incidental, or consequential damages arising from your use of the app or its outputs.<br/>

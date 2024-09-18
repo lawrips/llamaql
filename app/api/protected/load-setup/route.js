@@ -1,10 +1,16 @@
-const rag = require('@/lib/rag/sqlite3/rag');
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+
+import Rag from '@/lib/rag/sqlite3/rag';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const dbName = searchParams.get('app');
+    const session = await getServerSession(authOptions);
+
     try {
-        let result = await rag.getSetup(dbName);
+        const rag = new Rag(session.user.email, dbName);
+        let result = await rag.getSetup();
         console.log('example queries:');
         console.log(result);
 

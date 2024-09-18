@@ -125,14 +125,13 @@ function UploadPage() {
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Option 1: Select a DB</h2>
 
-          <div className="grid grid-cols-3 gap-4 p-4">
+          <div className="grid grid-cols-2 gap-4 p-4">
             {dbFiles.map((item, index) => (
               <div key={index} className="relative border p-4 rounded shadow">
                 <span>
                   <center>
                     <p><strong><a href={`/?app=${item.file}`}>{item.file}</a></strong> </p>
                     <p><a href={`/?app=${item.file}`}>({item.count >= 1000000 ? (item.count / 1000000).toFixed(1) + 'm' : item.count >= 1000 ? (item.count / 1000).toFixed(0) + 'k' : item.count.toString()} rows)</a></p>
-                    <br />
                     <X
                       color="red"
                       size={20}
@@ -185,7 +184,7 @@ function UploadPage() {
           )}
         </div>
         <br />
-        By using this research prototype, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
+        By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
       </div>
       <ModalDialog
         open={dialogOpen}

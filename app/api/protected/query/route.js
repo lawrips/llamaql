@@ -1,8 +1,10 @@
-const { MongoClient } = require('mongodb');
-
-const rag = require('@/lib/rag/sqlite3/rag');
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+import Rag from '@/lib/rag/sqlite3/rag';
 
 export async function POST(request) {
+  const session = await getServerSession(authOptions);
+
   const body = await request.json();
   let input = body.input;
   let annotation = body.annotation;
@@ -15,7 +17,10 @@ export async function POST(request) {
 
   console.log("****** NEW QUERY REQUEST ******** ")
 
-  let result = await rag.query(input, annotation, model, instructions, schema, dbName, requery || null);
+
+  const rag = new Rag(session.user.email, dbName);
+  let result = await rag.query( input, annotation, model, instructions, schema, requery || null);
+  console.log(result)
 
   if (result.error == null) {
     return new Response(

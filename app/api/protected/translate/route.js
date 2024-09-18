@@ -1,4 +1,5 @@
-const rag = require('@/lib/rag/sqlite3/rag');
+import Rag from '@/lib/rag/sqlite3/rag';
+
 
 export async function POST(request) {
   const body = await request.json();
@@ -17,6 +18,7 @@ export async function POST(request) {
     });
   }
 
+  const rag = new Rag();
   const result = await rag.translate(body.query, body.instructions, body.input, model);
 
   return new Response(

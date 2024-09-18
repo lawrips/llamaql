@@ -1,12 +1,13 @@
 //const { MongoClient } = require('mongodb');
-const rag = require('../lib/rag/sqlite3/rag');
+import Rag from '@/lib/rag/sqlite3/rag';
 
 module.exports = {
-    exportJson: async function (dbName) {
+    exportJson: async function (username, dbName) {
 
         let json = '';
 
-        let result = await rag.getSetup(dbName);
+        const rag = new Rag(session.user.email, dbName);
+        let result = await rag.getSetup();
 
         // Convert each document to JSONL format
         result.queries.forEach(doc => {

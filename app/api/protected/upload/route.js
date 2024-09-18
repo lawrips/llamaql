@@ -5,10 +5,13 @@ const path = require('path');
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from 'next/server';
-import AdmZip from 'adm-zip'; // Import AdmZip for handling ZIP files
+import AdmZip from 'adm-zip';
 
 const utils = require('@/lib/utils/typeUtils');
 const instructions = require('@/lib/constants/instructions')
+
+import Rag from '@/lib/rag/sqlite3/rag';
+const myDb = require('@/lib/services/sql');
 
 
 // Function to process a single CSV file
@@ -113,6 +116,26 @@ export async function POST(request) {
 
     // one time setup for instructions, etc
     createSetup(db);
+
+    // populate example q's
+
+    const stmt = db.prepare(`SELECT * FROM data_schema`);
+    let schema = stmt.all();
+
+    const rag = new Rag();
+    let examples = await rag.createExamples(instructions.setupInstructions, schema[0].schema, schema[0].examples);
+    console.log(examples);
+
+    for (let example of examples) {
+      myDb.run(session.user.email, dbName, 
+      `INSERT INTO queries (userQuery, userAnnotation) 
+      VALUES (?, ?)
+      ON CONFLICT(userQuery) 
+      DO UPDATE SET 
+        userAnnotation = excluded.userAnnotation
+        WHERE queries.userQuery = excluded.userQuery`,
+        [example.query, example.annotation]);
+    }
     db.close();
 
     return new Response(
@@ -159,7 +182,7 @@ export async function GET(request) {
         let count = 0;
         console.log(count)
         db.close();
-        data.push({ file: file.replace(".db", ""), count: 0});//count[0].rowCount });
+        data.push({ file: file.replace(".db", ""), count: 0 });//count[0].rowCount });
       }
 
     } catch (ex) {
@@ -253,47 +276,47 @@ const createDataTable = (db, tableName, parsedData) => {
 };
 
 const insertData = async (db, tableName, data) => {
-    const parsedData = await new Promise((resolve, reject) => {
-      Papa.parse(data, {
-        delimiter: guessDelimiter(data),
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: false,
-        complete: (result) => resolve(result),
-        error: (error) => reject(error)
-      });
+  const parsedData = await new Promise((resolve, reject) => {
+    Papa.parse(data, {
+      delimiter: guessDelimiter(data),
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+      complete: (result) => resolve(result),
+      error: (error) => reject(error)
     });
+  });
 
 
-    console.log('about to sanitize headers')
-    let sanitizedHeaders = [];
-    const headers = parsedData.meta.fields.map(header => utils.sanitizeHeader(header, sanitizedHeaders));
-    console.log('headers:')
-    console.log(headers)
-    console.log('parsedData')
-    createDataTable(db, tableName, parsedData);
+  console.log('about to sanitize headers')
+  let sanitizedHeaders = [];
+  const headers = parsedData.meta.fields.map(header => utils.sanitizeHeader(header, sanitizedHeaders));
+  console.log('headers:')
+  console.log(headers)
+  console.log('parsedData')
+  createDataTable(db, tableName, parsedData);
 
-    const placeholders = headers.map(() => '?').join(', ');
-    const insertStmt = db.prepare(`INSERT INTO data_${tableName} (${headers.join(', ')}) VALUES (${placeholders})`);
-    console.log('insertStmt:');
-    console.log(insertStmt.source)
+  const placeholders = headers.map(() => '?').join(', ');
+  const insertStmt = db.prepare(`INSERT INTO data_${tableName} (${headers.join(', ')}) VALUES (${placeholders})`);
+  console.log('insertStmt:');
+  console.log(insertStmt.source)
 
-    const transaction = db.transaction((parsedData) => {
-      let count = 0;
-      parsedData.data.forEach((row) => {
+  const transaction = db.transaction((parsedData) => {
+    let count = 0;
+    parsedData.data.forEach((row) => {
 
-        // Access data by original header name instead of relying on order:
-        const values = parsedData.meta.fields.map(header => row[header]);
-        const result = insertStmt.run(values);
-        count += result.changes;
-      });
-      return count;
+      // Access data by original header name instead of relying on order:
+      const values = parsedData.meta.fields.map(header => row[header]);
+      const result = insertStmt.run(values);
+      count += result.changes;
     });
+    return count;
+  });
 
-    const result = transaction(parsedData);
-    console.log(`Inserted ${result} rows`);
+  const result = transaction(parsedData);
+  console.log(`Inserted ${result} rows`);
 
-    return result;
+  return result;
 };
 
 

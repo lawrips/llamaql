@@ -3,19 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 17, 24, 39; /* Updated Dark Gray Text */
-  --background-start-rgb: 249, 250, 251; /* Updated Light Gray Background */
+  --foreground-rgb: 17, 24, 39; /* Dark Gray Text */
+  --background-start-rgb: 249, 250, 251; /* Light Gray Background */
   --background-end-rgb: 255, 255, 255; /* White Background */
-  --primary-color-rgb: 49, 130, 206; /* Updated Soft Blue */
+  --primary-color-rgb: 49, 130, 206; /* Soft Blue */
   --border-radius: 0.375rem; /* Slightly rounded corners */
 }
 
-@media (prefers-color-scheme: light) {
+/* Remove the foreground color change for dark mode */
+@media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 241, 245, 249; /* Updated Almost White Text */
     --background-start-rgb: 17, 24, 39; /* Dark Gray Background */
-    --background-end-rgb: 15, 23, 42; /* Updated Almost Black Background */
+    --background-end-rgb: 15, 23, 42; /* Almost Black Background */
     --primary-color-rgb: 99, 102, 241; /* Updated Soft Blue */
+    /* Removed --foreground-rgb to keep it consistent */
   }
 }
 

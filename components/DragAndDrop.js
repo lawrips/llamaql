@@ -25,15 +25,15 @@ const DragAndDrop = ({ onFileRead }) => {
   };
 
   const handleUpload = (event) => {
-    event.preventDefault(); // Prevent default form action, if any
-    event.stopPropagation(); // Prevent the click from bubbling up to the parent div
+    event.preventDefault(); // Prevent default form action
+    //event.stopPropagation(); // Prevent the click from bubbling up to the parent div
+
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContents = e.target.result;
-        onFileRead(fileContents); // Trigger the file read callback
-      };
-      reader.readAsText(file);
+      console.log(file)
+      const formData = new FormData();
+      formData.append('file', file); // Append the file to form data
+      console.log(formData)
+      onFileRead(formData); // Callback when the file is successfully uploaded
     }
   };
 
@@ -41,7 +41,7 @@ const DragAndDrop = ({ onFileRead }) => {
     <div
       onDrop={handleDrop}
       onDragOver={handleDragOver}
-      onClick={handleClick} // Opens the file dialog when clicked
+      //onClick={handleClick} // Opens the file dialog when clicked
       className="border-2 border-dashed border-gray-400 rounded-lg p-5 text-center m-5 transition-colors duration-300 ease-in-out hover:border-indigo-500"
       style={{
         border: '2px dashed #ccc',
@@ -52,25 +52,28 @@ const DragAndDrop = ({ onFileRead }) => {
         cursor: 'pointer',
       }}
     >
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }} // Hidden file input
-        onChange={handleFileChange}
-      />
-      {file ? (
-        <div className="space-y-4">
-          <p className="text-gray-700">File: {file.name}</p>
-          <button
-            onClick={handleUpload} // Upload the file
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-300 ease-in-out"
-          >
-            Upload
-          </button>
-        </div>
-      ) : (
-        <p className="text-gray-500">Drag and drop a file here, or click to select a file</p>
-      )}
+      <form onSubmit={handleUpload}>
+
+        <input
+          type="file"
+          style={{ display: 'none' }} // Hidden file input
+          onChange={handleFileChange}
+          accept=".csv,.zip"
+        />
+        {file ? (
+          <div className="space-y-4">
+            <p className="text-gray-700">File: {file.name}</p>
+            <button
+              type="submit" // Upload the file
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-300 ease-in-out"
+            >
+              Upload
+            </button>
+          </div>
+        ) : (
+          <p className="text-gray-500">Drag and drop a file here, or click to select a file</p>
+        )}
+      </form>
     </div>
   );
 };

@@ -32,24 +32,24 @@ function UploadPage() {
 
   }, []);
 
-  const handleUpload = async (contents) => {
+  const handleUpload = async (formData) => {
     if (appName) {
-      setFileContents(contents);
+      console.log(formData)
 
       try {
         const response = await fetch(`/api/protected/upload?app=${appName}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(contents)
+          body: formData, // Send the file as form data
         });
 
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error('File upload failed');
         }
 
-        let _result = await response.json();
+        const result = await response.json();
+        console.log('here')
+        console.log(result);
+
         setResult(_result.count);
         return result;
       } catch (error) {

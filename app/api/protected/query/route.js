@@ -19,7 +19,7 @@ export async function POST(request) {
 
 
   const rag = new Rag(session.user.email, dbName);
-  let result = await rag.query( input, annotation, model, instructions, schema, requery || null);
+  let result = await rag.query( input, annotation, model, instructions, schema, requery || null);  
   console.log(result)
 
   if (result.error == null) {

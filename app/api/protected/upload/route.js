@@ -3,20 +3,89 @@ const Papa = require('papaparse');
 const fs = require('fs');
 const path = require('path');
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from 'next/server';
+import AdmZip from 'adm-zip'; // Import AdmZip for handling ZIP files
 
 const utils = require('@/lib/utils/typeUtils');
 const instructions = require('@/lib/constants/instructions')
 
+
+// Function to process a single CSV file
+const processCSV = async (db, csvContent, csvFilename) => {
+  // insert csv data into sql table
+  let result = await insertData(db, csvFilename.replace('.csv', ''), csvContent);
+  // create dataSchema for this table
+  createSchema(db, csvFilename.replace('.csv', ''));
+
+  return result;
+}
+
 export async function POST(request) {
   const { searchParams } = new URL(request.url);
   const dbName = searchParams.get('app');
-  const contents = await request.json();
-
   if (dbName) {
+    const csvFiles = [];
+
+    try {
+      const formData = await request.formData();
+
+      const file = formData.get('file'); // 'file' is the name of the form field
+
+      if (!file) {
+        return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      }
+
+
+      // Access file properties
+      const fileName = file.name; // Original filename
+      const fileType = file.type; // MIME type
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // process files first
+
+      if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
+        // Handle single CSV file
+        const csvContent = buffer.toString('utf-8');
+        csvFiles.push({
+          fileName: fileName,
+          content: csvContent,
+        });
+
+
+      } else if (fileType === 'application/zip' || fileName.endsWith('.zip')) {
+        // Handle ZIP file
+        const zip = new AdmZip(buffer);
+        const zipEntries = zip.getEntries();
+
+        // Extract and process each CSV file in the ZIP
+        for (const entry of zipEntries) {
+          const entryName = entry.entryName;
+          if (entryName.endsWith('.csv')) {
+            const csvContent = entry.getData().toString('utf-8');
+            csvFiles.push({
+              fileName: entryName,
+              content: csvContent,
+            });
+
+            console.log('Detected ' + entryName);
+          }
+        }
+
+        if (csvFiles.length === 0) {
+          return NextResponse.json({ message: 'No CSV files found in the ZIP' }, { status: 400 });
+        }
+
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      return NextResponse.json({ message: 'Error processing file' }, { status: 500 });
+    }
+
     const session = await getServerSession(authOptions);
     const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
-  
+
     const db = new Database(`${directoryPath}${dbName}.db`);
     db.pragma('journal_mode = WAL');
 
@@ -35,15 +104,22 @@ export async function POST(request) {
       console.log("Table 'data_schema' still exists.");
     }
 
-    let result = await insertData(db, contents);
-    await createSchema(db);
-    await createSetup(db);
+    // process each file
+    for (const file of csvFiles) {
+      console.log('processing ' + file.fileName);
+      file.count = await processCSV(db, file.content, file.fileName);
+      console.log('count: ' + file.count)
+    }
+
+    // one time setup for instructions, etc
+    createSetup(db);
     db.close();
 
     return new Response(
       JSON.stringify(
         {
-          count: result,
+          message: 'Processed successfully',
+          csvFiles: csvFiles.map(file => { return { fileName: file.fileName, count: file.count } }),
           status: 'ok'
         }), {
       status: 200,
@@ -78,11 +154,12 @@ export async function GET(request) {
       for (const file of dbFiles) {
         const db = new Database(`${directoryPath}${file}`, { fileMustExist: true });
         db.pragma('journal_mode = WAL');
-        const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
-        let count = stmt.all();
+        //const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
+        //let count = stmt.all();
+        let count = 0;
         console.log(count)
         db.close();
-        data.push({ file: file.replace(".db", ""), count: count[0].rowCount });
+        data.push({ file: file.replace(".db", ""), count: 0});//count[0].rowCount });
       }
 
     } catch (ex) {
@@ -127,19 +204,19 @@ const createSetup = async (db) => {
   console.log('created saved_data')
 }
 
-const createSchema = async (db) => {
+const createSchema = (db, tableName) => {
 
   db.exec(`
-      CREATE TABLE data_schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT
+      CREATE TABLE IF NOT EXISTS data_schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT
       );
     `);
 
-  let schema = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?`).get('query_data');
+  let schema = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?`).get(`data_${tableName}`);
 
   console.log('schema:')
   console.log(schema.sql);
 
-  const stmt = db.prepare(`SELECT * FROM query_data`);
+  const stmt = db.prepare(`SELECT * FROM data_${tableName}`);
   let exampleData = stmt.all();
   console.log('exampleData:')
   console.log(exampleData[0])
@@ -147,12 +224,12 @@ const createSchema = async (db) => {
 
 
   // Insert the text row
-  db.prepare('INSERT INTO data_schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0,5))]);
+  db.prepare('INSERT INTO data_schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0, 5))]);
 
   console.log('created schema')
 }
 
-const createTable = async (db, parsedData) => {
+const createDataTable = (db, tableName, parsedData) => {
 
   const columnTypes = utils.determineColumnTypes(parsedData);
   let sanitizedHeaders = [];
@@ -163,55 +240,60 @@ const createTable = async (db, parsedData) => {
     return `${sanitizedHeader} ${sqlType}`;
   }).join(', ');
 
+  let createStmt = `DROP TABLE IF EXISTS ${tableName}`;
+  db.exec(createStmt);
+  createStmt = `DROP TABLE IF EXISTS data_${tableName}`;
+  db.exec(createStmt);
+
   console.log('columns:');
   console.log(columns)
-  const createStmt = `CREATE TABLE query_data (${columns})`;
+  createStmt = `CREATE TABLE IF NOT EXISTS data_${tableName} (${columns})`;
   db.exec(createStmt);
   console.log('table created')
 };
 
-const insertData = async (db, data) => {
-  const parsedData = await new Promise((resolve, reject) => {
-    Papa.parse(data, {
-      delimiter: guessDelimiter(data),
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false,
-      complete: (result) => resolve(result),
-      error: (error) => reject(error)
+const insertData = async (db, tableName, data) => {
+    const parsedData = await new Promise((resolve, reject) => {
+      Papa.parse(data, {
+        delimiter: guessDelimiter(data),
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+        complete: (result) => resolve(result),
+        error: (error) => reject(error)
+      });
     });
-  });
 
 
-  console.log('about to sanitize headers')
-  let sanitizedHeaders = [];
-  const headers = parsedData.meta.fields.map(header => utils.sanitizeHeader(header, sanitizedHeaders));
-  console.log('headers:')
-  console.log(headers)
-  console.log('parsedData')
-  await createTable(db, parsedData);
+    console.log('about to sanitize headers')
+    let sanitizedHeaders = [];
+    const headers = parsedData.meta.fields.map(header => utils.sanitizeHeader(header, sanitizedHeaders));
+    console.log('headers:')
+    console.log(headers)
+    console.log('parsedData')
+    createDataTable(db, tableName, parsedData);
 
-  const placeholders = headers.map(() => '?').join(', ');
-  const insertStmt = db.prepare(`INSERT INTO query_data (${headers.join(', ')}) VALUES (${placeholders})`);
-  console.log('inserStat');
-  console.log(insertStmt.source)
+    const placeholders = headers.map(() => '?').join(', ');
+    const insertStmt = db.prepare(`INSERT INTO data_${tableName} (${headers.join(', ')}) VALUES (${placeholders})`);
+    console.log('insertStmt:');
+    console.log(insertStmt.source)
 
-  const transaction = db.transaction((parsedData) => {
-    let count = 0;
-    parsedData.data.forEach((row) => {
+    const transaction = db.transaction((parsedData) => {
+      let count = 0;
+      parsedData.data.forEach((row) => {
 
-      // Access data by original header name instead of relying on order:
-      const values = parsedData.meta.fields.map(header => row[header]);
-      const result = insertStmt.run(values);
-      count += result.changes;
+        // Access data by original header name instead of relying on order:
+        const values = parsedData.meta.fields.map(header => row[header]);
+        const result = insertStmt.run(values);
+        count += result.changes;
+      });
+      return count;
     });
-    return count;
-  });
 
-  const result = transaction(parsedData);
-  console.log(`Inserted ${result} rows`);
+    const result = transaction(parsedData);
+    console.log(`Inserted ${result} rows`);
 
-  return result;
+    return result;
 };
 
 

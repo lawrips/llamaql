@@ -1,4 +1,4 @@
-//const { MongoClient } = require('mongodb');
+import { getServerSession } from "next-auth/next";
 import Rag from '@/lib/rag/sqlite3/rag';
 
 module.exports = {
@@ -6,7 +6,7 @@ module.exports = {
 
         let json = '';
 
-        const rag = new Rag(session.user.email, dbName);
+        const rag = new Rag(username, dbName);
         let result = await rag.getSetup();
 
         // Convert each document to JSONL format
@@ -46,5 +46,3 @@ module.exports = {
         return json;
     }
 }
-
-module.exports.exportJson().catch(console.error);

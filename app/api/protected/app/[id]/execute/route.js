@@ -3,17 +3,18 @@ const { MongoClient } = require('mongodb');
 const db = require('@/lib/services/sql')
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+const utils = require('@/lib/utils/shareUtils');
 
 
-export async function POST(request) {
+export async function POST(request, {params}) {
   const { input } = await request.json();
-  const { searchParams } = new URL(request.url);
-  const dbName = searchParams.get('app');
+  const { id } = params;
   const session = await getServerSession(authOptions);
+  let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
   
   //const result = await mongo.execute(JSON.parse(input), dbName);
-  const result = db.query(session.user.email, dbName, input);
+  const result = db.query(email, dbName, input);
   if (result.err == null) {
     return new Response(
       JSON.stringify(

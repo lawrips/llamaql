@@ -1,15 +1,19 @@
-import Database from 'better-sqlite3';
 const fs = require('fs');
 const path = require('path');
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+const utils = require('@/lib/utils/shareUtils');
 
 export async function DELETE(request, { params }) {
-    const {dbName} = params;
-    console.log(dbName);
-    
-    if (dbName) {
-      const directoryPath = path.join(process.cwd(), 'db');
-      const filePath = path.join(directoryPath, dbName + '.db');
+    const {id} = params;
+    const session = await getServerSession(authOptions);
+    let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
+    if (dbName) {
+
+      const directoryPath = path.join(process.cwd(), `db/${email}/`);
+      const filePath = path.join(directoryPath, dbName + '.db');
+     
       // Function to delete the file
       fs.unlink(filePath, (err) => {
         if (err) {

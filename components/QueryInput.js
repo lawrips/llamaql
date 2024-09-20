@@ -11,7 +11,7 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                 style={{ width: '100%', boxSizing: 'border-box', paddingRight: '2.5rem' }}
                 value={userQuery}
                 type="text"
-                placeholder="Natural Language Query"
+                placeholder="Enter query here"
                 onChange={(e) => {
                     setUserQuery(e.target.value);
                     setShowDropdown(true);

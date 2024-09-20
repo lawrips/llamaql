@@ -1,9 +1,10 @@
 import Rag from '@/lib/rag/sqlite3/rag';
 
 
-export async function POST(request) {
+export async function POST(request, {params}) {
   const body = await request.json();
   const { searchParams } = new URL(request.url);
+
   const model = searchParams.get('model');
 
   if (JSON.stringify(body.input).length > 10000) {

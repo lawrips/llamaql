@@ -12,7 +12,7 @@ const AnnotationInput = ({ annotation, setAnnotation, focusedInput, setFocusedIn
       onFocus={() => setFocusedInput('annotation')}
       onBlur={() => setFocusedInput(null)}
       type="text"
-      placeholder="Annotation (Optional)"
+      placeholder="Instructions (add hints or additional details if helpful)"
     />
   </div>
   );

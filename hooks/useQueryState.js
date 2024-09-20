@@ -25,6 +25,7 @@ export const useQueryState = (appName) => {
     const [chartTicks, setChartTicks] = useState({});
     const [chartKeys, setChartKeys] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [shared, setShared] = useState(false);
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -35,13 +36,19 @@ export const useQueryState = (appName) => {
             console.log("data:")
             console.log(data)
             if (!data) {
-                router.push('/upload');
+                router.push('/');
                 return null;
             }
             setQueries(data.queries);
+            setShared(data.shared);
 
+            // update query dropdown
             setQueryOptions(data.queries.map(i => i.userQuery));
+
+            // set the schema panel
             setDataSchema(JSON.stringify(data.dataSchema, null, 2));
+
+            // update the instructions panel
             if (data.instructions) {
                 const _instructions = JSON.parse(data.instructions);
 
@@ -53,7 +60,7 @@ export const useQueryState = (appName) => {
                 setCheckedItems(new Set(substitutions));
             }
             // uncomment these lines below when you want finetunes back in the picture
-            //const finetunes = await fetch(`/api/protected/finetune?app=${appName}`).then(res => res.json());
+            //const finetunes = await fetch(`/api/protected/app/${appName}/finetune`).then(res => res.json());
             setModels([
                 { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },
                 { value: "gpt-4o-2024-08-06", label: "gpt-4o-2024-08-06 (higher quality / higher cost)" },
@@ -145,7 +152,7 @@ export const useQueryState = (appName) => {
         setQueries(remainingQueries);
         setQueryOptions(remainingQueryOptions);
 
-        await fetch(`/api/protected/save-query?app=${appName}`, {
+        await fetch(`/api/protected/app/${appName}/save-query`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: option }),
@@ -224,7 +231,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveQuery = async () => {
-        await fetch(`/api/protected/save-query?app=${appName}`, {
+        await fetch(`/api/protected/app/${appName}/save-query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
@@ -239,7 +246,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveInstructions = async () => {
-        await fetch(`/api/protected/instructions?app=${appName}`, {
+        await fetch(`/api/protected/app/${appName}/instructions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ dataInstructions, queryInstructions, requeryInstructions, dataSchema }),
@@ -249,7 +256,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleSaveData = async () => {
-        await fetch(`/api/protected/save-data?app=${appName}`, {
+        await fetch(`/api/protected/app/${appName}/save-data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: userQuery, data: chatResult }),
@@ -260,7 +267,7 @@ export const useQueryState = (appName) => {
 
     const handleExportJsonl = async () => {
         console.log(appName)
-        let response = await fetch(`/api/protected/export-json?app=${appName}`, { method: 'POST' });
+        let response = await fetch(`/api/protected/app/${appName}/export-json`, { method: 'POST' });
         const blob = await response.blob(); // Convert response to a Blob
         const url = window.URL.createObjectURL(blob); // Create URL for the Blob
 
@@ -295,7 +302,7 @@ export const useQueryState = (appName) => {
                     let _userMessage = item.messages.filter(i => i.role == 'user');
 
                     console.log(item)
-                    await fetch(`/api/protected/save-query?app=${appName}`, {
+                    await fetch(`/api/protected/app/${appName}/save-query`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -320,7 +327,7 @@ export const useQueryState = (appName) => {
     };
 
     const handleFinetune = async () => {
-        await fetch(`/api/protected/finetune?app=${appName}`, { method: 'POST' });
+        await fetch(`/api/protected/app/${appName}/finetune?app`, { method: 'POST' });
         // show confirmation dialog
         setDialogOpen(true);
     };
@@ -381,6 +388,7 @@ export const useQueryState = (appName) => {
         handleKeyDown,
         dialogOpen,
         handleDialogClose,
-        handleSaveInstructions
+        handleSaveInstructions,
+        shared
     };
 };

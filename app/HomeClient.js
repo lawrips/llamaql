@@ -61,7 +61,8 @@ export default function HomeClient({ appName }) {
         handleKeyDown,
         dialogOpen,
         handleDialogClose,
-        handleSaveInstructions
+        handleSaveInstructions,
+        shared
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
 
@@ -139,6 +140,7 @@ export default function HomeClient({ appName }) {
                     handleFinetune={handleFinetune}
                     fileInputRef={fileInputRef}
                     handleFileChange={handleFileChange}
+                    shared={shared}
                 />
                 <br />
                 By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.
@@ -209,6 +211,7 @@ export default function HomeClient({ appName }) {
                     handleFinetune={handleFinetune}
                     fileInputRef={fileInputRef}
                     handleFileChange={handleFileChange}
+                    shared={shared}
                 />
                 <br />
                 By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.

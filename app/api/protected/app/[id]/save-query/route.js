@@ -1,17 +1,18 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const db = require('@/lib/services/sql');
+const utils = require('@/lib/utils/shareUtils');
 
 export async function POST(request) {
-    const { searchParams } = new URL(request.url);
-    const dbName = searchParams.get('app');
+    const { id } = params;
     const session = await getServerSession(authOptions);
+    let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
     let json = await request.json();
     console.log(json);
 
     // treats userQuery as the primary key... if it's a duplicate userquery it'll overwrite
-    let result = db.run(session.user.email, dbName, `
+    let result = db.run(email, dbName, `
         INSERT INTO queries (userQuery, userAnnotation, dbQuery, dbResult) 
         VALUES (?, ?, ?, ?)
         ON CONFLICT(userQuery) 
@@ -30,15 +31,15 @@ export async function POST(request) {
     });
 }
 
-export async function DELETE(request) {
-    const { searchParams } = new URL(request.url);
-    const dbName = searchParams.get('app');
+export async function DELETE(request, {params}) {
+    const { id } = params;
     const session = await getServerSession(authOptions);
+    let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
     let json = await request.json();
     console.log(json);
 
-    let result = db.run(session.user.email, dbName, 'DELETE FROM queries WHERE userQuery = ?', [json.userQuery]);
+    let result = db.run(email, dbName, 'DELETE FROM queries WHERE userQuery = ?', [json.userQuery]);
     console.log(result.changes)
 
     return new Response(JSON.stringify({ message: 'Query result deleted' }), {

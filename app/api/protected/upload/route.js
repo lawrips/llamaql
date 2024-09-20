@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 const Papa = require('papaparse');
-const fs = require('fs');
 const path = require('path');
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -24,9 +23,9 @@ const processCSV = async (db, csvContent, csvFilename) => {
   return result;
 }
 
-export async function POST(request) {
-  const { searchParams } = new URL(request.url);
-  const dbName = searchParams.get('app');
+export async function POST(request, {params}) {
+  const { id } = params;
+  const dbName = id;
   if (dbName) {
     const csvFiles = [];
 
@@ -93,25 +92,30 @@ export async function POST(request) {
     db.pragma('journal_mode = WAL');
 
     db.exec(`DROP TABLE IF EXISTS query_data`);
-    db.exec(`DROP TABLE IF EXISTS data_schema`);
+    db.exec(`DROP TABLE IF EXISTS schema`);
     //db.exec(`DROP TABLE IF EXISTS queries`);
     db.exec(`DROP TABLE IF EXISTS saved_data`);
     db.exec(`DROP TABLE IF EXISTS instructions`);
     console.log(`Tables have been dropped.`);
 
-    const tableInfo = db.prepare("PRAGMA table_info(data_schema)").all();
+    const tableInfo = db.prepare("PRAGMA table_info(schema)").all();
 
     if (tableInfo.length === 0) {
-      console.log("Table 'data_schema' was dropped successfully.");
+      console.log("Table 'schema' was dropped successfully.");
     } else {
-      console.log("Table 'data_schema' still exists.");
+      console.log("Table 'schema' still exists.");
     }
 
     // process each file
-    for (const file of csvFiles) {
-      console.log('processing ' + file.fileName);
-      file.count = await processCSV(db, file.content, file.fileName);
-      console.log('count: ' + file.count)
+    if (csvFiles.length == 1) {
+      csvFiles[0].count = await processCSV(db, csvFiles[0].content, dbName);
+    }
+    else {
+      for (const file of csvFiles) {
+        console.log('processing ' + file.fileName);
+        file.count = await processCSV(db, file.content, file.fileName);
+        console.log('count: ' + file.count)
+      }
     }
 
     // one time setup for instructions, etc
@@ -119,7 +123,7 @@ export async function POST(request) {
 
     // populate example q's
 
-    const stmt = db.prepare(`SELECT * FROM data_schema`);
+    const stmt = db.prepare(`SELECT * FROM schema`);
     let schema = stmt.all();
 
     const rag = new Rag();
@@ -127,8 +131,8 @@ export async function POST(request) {
     console.log(examples);
 
     for (let example of examples) {
-      myDb.run(session.user.email, dbName, 
-      `INSERT INTO queries (userQuery, userAnnotation) 
+      myDb.run(session.user.email, dbName,
+        `INSERT INTO queries (userQuery, userAnnotation) 
       VALUES (?, ?)
       ON CONFLICT(userQuery) 
       DO UPDATE SET 
@@ -153,7 +157,7 @@ export async function POST(request) {
     return new Response(
       JSON.stringify(
         {
-          status: 'DB not found - must supply ?app=appname'
+          status: 'DB not found - must supply /appname'
         }), {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
@@ -161,55 +165,6 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
-  // Read and Filter .db files
-  const session = await getServerSession(authOptions);
-  const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
-  let files = fs.readdirSync(directoryPath);
-  const dbFiles = files.filter(file => path.extname(file) === '.db');
-  console.log(dbFiles);
-
-  let data = [];
-
-  if (dbFiles.length > 0) {
-
-    try {
-      for (const file of dbFiles) {
-        const db = new Database(`${directoryPath}${file}`, { fileMustExist: true });
-        db.pragma('journal_mode = WAL');
-        //const stmt = db.prepare(`SELECT count(*) as rowCount FROM query_data`);
-        //let count = stmt.all();
-        let count = 0;
-        console.log(count)
-        db.close();
-        data.push({ file: file.replace(".db", ""), count: 0 });//count[0].rowCount });
-      }
-
-    } catch (ex) {
-      console.log(ex);
-    }
-    return new Response(
-      JSON.stringify(
-        {
-          data,
-          status: 'ok'
-        }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  else {
-    return new Response(
-      JSON.stringify(
-        {
-          data: [],
-          status: 'DB not found - must supply ?app=appname'
-        }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-}
 
 
 
@@ -230,7 +185,7 @@ const createSetup = async (db) => {
 const createSchema = (db, tableName) => {
 
   db.exec(`
-      CREATE TABLE IF NOT EXISTS data_schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT
+      CREATE TABLE IF NOT EXISTS schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT
       );
     `);
 
@@ -247,7 +202,7 @@ const createSchema = (db, tableName) => {
 
 
   // Insert the text row
-  db.prepare('INSERT INTO data_schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0, 5))]);
+  db.prepare('INSERT INTO schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0, 5))]);
 
   console.log('created schema')
 }

@@ -3,17 +3,19 @@ import { dataInstructions, queryInstructions, requeryInstructions } from '@/lib/
 const db = require('@/lib/services/sql');
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+const utils = require('@/lib/utils/shareUtils');
 
-export async function POST(request) {
-    const { searchParams } = new URL(request.url);
-    const dbName = searchParams.get('app');
+export async function POST(request, { params }) {
+    const {id} = params;
     const session = await getServerSession(authOptions);
+
+    let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
     let {queryInstructions, requeryInstructions, dataInstructions, dataSchema} = await request.json();
 
-    let result = db.run(session.user.email, dbName, 'UPDATE instructions SET data = ?' ,JSON.stringify({queryInstructions, dataInstructions, requeryInstructions}));
+    let result = db.run(email, dbName, 'UPDATE instructions SET data = ?' ,JSON.stringify({queryInstructions, dataInstructions, requeryInstructions}));
     console.log(result.changes)
-    result = db.run(session.user.email, dbName, 'UPDATE data_schema SET schema = ?, examples = ?' , [JSON.parse(dataSchema)[0].schema, JSON.parse(dataSchema)[0].examples]);
+    result = db.run(email, dbName, 'UPDATE schema SET schema = ?, examples = ?' , [JSON.parse(dataSchema)[0].schema, JSON.parse(dataSchema)[0].examples]);
     console.log(result.changes)
 
 

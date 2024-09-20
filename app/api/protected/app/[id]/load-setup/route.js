@@ -13,8 +13,6 @@ export async function GET(request, { params }) {
     try {
         const rag = new Rag(email, dbName);
         let result = await rag.getSetup();
-        console.log('example queries:');
-        console.log(result);
 
         /*    result.queries = result.queries.map((i) => JSON.parse(i.data));
         

@@ -3,7 +3,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 const db = require('@/lib/services/sql');
 const utils = require('@/lib/utils/shareUtils');
 
-export async function POST(request) {
+export async function POST(request, {params}) {
     const { id } = params;
     const session = await getServerSession(authOptions);
     let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };

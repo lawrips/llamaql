@@ -6,6 +6,7 @@ const AnnotationInput = ({ annotation, setAnnotation, focusedInput, setFocusedIn
     <div style={getInputStyle('annotation')} className="relative">
     <input
       className="w-full p-2 border rounded"
+      autocomplete="off"
       style={{ width: '100%', boxSizing: 'border-box' }}
       value={annotation}
       onChange={(e) => setAnnotation(e.target.value)}

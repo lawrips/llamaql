@@ -82,6 +82,7 @@ export default function HomeClient({ appName }) {
                         setFocusedInput={setFocusedInput}
                         getInputStyle={getInputStyle}
                         handleKeyDown={handleKeyDown}
+                        shared={shared}
                     />
                     &nbsp;&nbsp;
                     <AnnotationInput
@@ -171,6 +172,7 @@ export default function HomeClient({ appName }) {
                         setFocusedInput={setFocusedInput}
                         getInputStyle={getInputStyle}
                         handleKeyDown={handleKeyDown}
+                        shared={shared}
                     />
                     &nbsp;&nbsp;
                     <AnnotationInput

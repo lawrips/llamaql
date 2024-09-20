@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search } from 'lucide-react';
 
-const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, setFocusedInput, getInputStyle, handleKeyDown }) => {
+const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, setFocusedInput, getInputStyle, handleKeyDown, shared }) => {
 
     return (
 
@@ -29,7 +29,7 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
 
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             {showDropdown && (
-                <div className="absolute bg-white border rounded mt-1 w-full z-10 max-h-40 overflow-y-auto">
+                <div className="absolute bg-white border rounded mt-1 w-full z-10 max-h-60 overflow-y-auto">
                     {queryOptions
                         .filter(option => option.toLowerCase().includes(userQuery.toLowerCase()))
                         .map((option, index) => (
@@ -39,20 +39,22 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                                 onMouseDown={(e) => handleOptionSelect(e, option)}
                             >
                                 <span className="flex-grow">{option}</span>
-                                <X
-                                    color="gray"
-                                    size={24}
-                                    className="text-gray-400 cursor-pointer"
-                                    onMouseDown={(e) => {
-                                        e.preventDefault(); // Prevents the default mousedown behavior
-                                        e.stopPropagation(); // Prevents the event from bubbling up to the parent div
-                                    }}
-                                    onClick={(e) => {
-                                        e.preventDefault(); // Prevents any default click behavior
-                                        e.stopPropagation(); // Prevents the event from bubbling up
-                                        handleDeleteOption(e, option); // Your custom delete handler
-                                    }}
-                                />
+                                {shared ? null :
+                                    <X
+                                        color="gray"
+                                        size={24}
+                                        className="text-gray-400 cursor-pointer"
+                                        onMouseDown={(e) => {
+                                            e.preventDefault(); // Prevents the default mousedown behavior
+                                            e.stopPropagation(); // Prevents the event from bubbling up to the parent div
+                                        }}
+                                        onClick={(e) => {
+                                            e.preventDefault(); // Prevents any default click behavior
+                                            e.stopPropagation(); // Prevents the event from bubbling up
+                                            handleDeleteOption(e, option); // Your custom delete handler
+                                        }}
+                                    />
+                                }
                             </div>
                         ))}
                 </div>

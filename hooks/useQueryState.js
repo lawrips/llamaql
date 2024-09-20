@@ -133,7 +133,7 @@ export const useQueryState = (appName) => {
         console.log(matchedQuery)
         if (matchedQuery) {
             setChatResult('')
-            setAnnotation(matchedQuery.userAnnotation);
+            setAnnotation(matchedQuery.userAnnotation || '');
             setDbQuery(matchedQuery.dbQuery);
             //setFocusedInput(null);
 

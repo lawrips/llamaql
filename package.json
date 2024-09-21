@@ -15,7 +15,7 @@
     "@mui/material": "^6.1.0",
     "adm-zip": "^0.5.16",
     "axios": "^1.7.7",
-    "better-sqlite3": "^11.2.1",
+    "better-sqlite3": "^11.3.0",
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.4.5",
@@ -30,7 +30,8 @@
     "react-dom": "^18",
     "react-select": "^5.8.0",
     "react-tabs": "^6.0.2",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "through2": "^4.0.2"
   },
   "devDependencies": {
     "postcss": "^8",

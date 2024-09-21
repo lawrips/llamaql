@@ -7,11 +7,7 @@ const ActionButtons = ({ handleSaveQuery, handleSaveData, handleExportJsonl, han
   console.log('shared is ' + shared)
   return (
     <div>
-      {
-        shared ?
-          null :
-          <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
-      }
+        <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
       {
         !shared && (session.user?.role == 'editor' || session.user?.role == 'admin') ?
           <span>

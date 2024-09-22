@@ -194,7 +194,7 @@ function UploadPage() {
         handleDialogClose={handleDialogConfirm}
         handleDialogCancel={handleDialogCancel}
         title="Confirmation"
-        content={`This will delete this database for all users. Continue?`}
+        content={`This will delete this database. Continue?`}
       />
       <TermsModal />
     </div >

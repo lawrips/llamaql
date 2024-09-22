@@ -3,7 +3,6 @@
 
 import React from 'react';
 import { useSession } from "next-auth/react";
-
 import { useQueryState } from '../hooks/useQueryState';
 import QueryInput from '../components/QueryInput';
 import AnnotationInput from '../components/AnnotationInput';
@@ -51,6 +50,10 @@ export default function HomeClient({ appName }) {
         setDataInstructions,
         dataSchema,
         setDataSchema,
+        dataExamples,
+        setDataExamples,
+        dataExplanation,
+        setDataExplanation,
         instructSubs,
         checkedItems,
         handleInstructSubChange,
@@ -119,6 +122,8 @@ export default function HomeClient({ appName }) {
                     setDataInstructions={setDataInstructions}
                     dataSchema={dataSchema}
                     setDataSchema={setDataSchema}
+                    dataExamples={dataExamples}
+                    dataExplanation={dataExplanation}
                     instructSubs={instructSubs}
                     checkedItems={checkedItems}
                     handleInstructSubChange={handleInstructSubChange}
@@ -197,6 +202,25 @@ export default function HomeClient({ appName }) {
                         <button onClick={() => handleQuery(true)}>Fix Query</button>
                     </div>
                 </div>
+                <InstructionPanel
+                    dbQuery={dbQuery}
+                    setDbQuery={setDbQuery}
+                    queryInstructions={queryInstructions}
+                    setQueryInstructions={setQueryInstructions}
+                    requeryInstructions={requeryInstructions}
+                    setRequeryInstructions={setRequeryInstructions}
+                    dataInstructions={dataInstructions}
+                    setDataInstructions={setDataInstructions}
+                    dataSchema={dataSchema}
+                    setDataSchema={setDataSchema}
+                    dataExamples={dataExamples}
+                    dataExplanation={dataExplanation}
+                    instructSubs={instructSubs}
+                    checkedItems={checkedItems}
+                    handleInstructSubChange={handleInstructSubChange}
+                    handleDirectQuery={handleDirectQuery}
+                    handleSaveInstructions={handleSaveInstructions}
+                />
 
                 <ResultPanel
                     chatResult={chatResult}

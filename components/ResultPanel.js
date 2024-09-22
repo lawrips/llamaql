@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import {
   ResponsiveContainer,
@@ -110,11 +110,15 @@ const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
                     tick={{
                       width: 20,
                       fill: '#666',
+                      fontSize: 14
                     }}
                   />
                   <YAxis ticks={chartTicks.ticks} domain={[chartTicks.niceMin, chartTicks.niceMax]} />
                   <Tooltip />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{                      
+                      position: 'relative', // Make sure the position is relative to apply the offset
+                    }} />
 
                   {/* Conditionally render data components based on chart type */}
                   {chartKeys.map((key, index) => {

@@ -216,10 +216,18 @@ const createSchema = (db, tableName) => {
   console.log('exampleData (first row):')
   console.log(exampleData[0])
 
-
-
   // Insert the text row
-  db.prepare('INSERT INTO schema (schema, examples) VALUES (?, ?)').run([schema.sql, JSON.stringify(exampleData.slice(0, 5))]);
+  let cleanData = `\nTABLE: data_${tableName}\n`;
+  cleanData += Object.keys(exampleData[0]).join(',') + '\n';
+  for (let i = 0; i < 5; i++) {
+    Object.entries(exampleData[i]).forEach(([key, value]) => {
+      cleanData += `${value},`;
+    });
+    cleanData = cleanData.slice(0,cleanData.length -2);
+    cleanData += '\n';
+  }
+
+  db.prepare('INSERT INTO schema (schema, examples) VALUES (?, ?)').run([schema.sql, cleanData]);
 
   console.log('created schema')
 }
@@ -235,7 +243,7 @@ const createDataTable = (db, tableName, parsedData) => {
     return `${sanitizedHeader} ${sqlType}`;
   }).join(', ');
 
-  let createStmt = `DROP TABLE IF EXISTS ${tableName}`;
+  let createStmt = `DROP TABLE IF EXISTS "${tableName}"`;
   db.exec(createStmt);
   createStmt = `DROP TABLE IF EXISTS data_${tableName}`;
   db.exec(createStmt);

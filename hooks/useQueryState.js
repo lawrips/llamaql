@@ -17,6 +17,8 @@ export const useQueryState = (appName) => {
     const [requeryInstructions, setRequeryInstructions] = useState('');
     const [dataInstructions, setDataInstructions] = useState('');
     const [dataSchema, setDataSchema] = useState('');
+    const [dataExplanation, setDataExplanation] = useState('');
+    const [dataExamples, setDataExamples] = useState('');
     const [instructSubs, setInstructSubs] = useState([]);
     const [checkedItems, setCheckedItems] = useState(new Set());
     const [showDropdown, setShowDropdown] = useState('');
@@ -46,7 +48,11 @@ export const useQueryState = (appName) => {
             setQueryOptions(data.queries.map(i => i.userQuery));
 
             // set the schema panel
+            //setDataSchema(data.dataSchema[0].examples + data.dataSchema[1].schema);
+            //setDataSchema(data.dataSchema[0].examples + data.dataSchema[1].schema);
             setDataSchema(JSON.stringify(data.dataSchema, null, 2));
+            setDataExamples(data.dataSchema.map(i => i.examples));
+            setDataExplanation(data.dataSchema[data.dataSchema.length - 1].schema);
 
             // update the instructions panel
             if (data.instructions) {
@@ -389,6 +395,8 @@ export const useQueryState = (appName) => {
         dialogOpen,
         handleDialogClose,
         handleSaveInstructions,
-        shared
+        shared,
+        dataExamples,
+        dataExplanation
     };
 };

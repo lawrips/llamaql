@@ -22,7 +22,7 @@ const InstructionPanel = ({
   handleSaveInstructions
 }) => {
   const { data: session } = useSession(); // Get session data
-  const [isOpen, setIsOpen] = useState(session.user.role == 'editor' || session.user.role == 'admin' ? true : false);
+  const [isOpen, setIsOpen] = useState(session.user.role == 'admin' ? true : false);
 
   const toggleContent = () => {
     setIsOpen(!isOpen);

@@ -14,22 +14,27 @@ export async function GET(request, { params }) {
         const rag = new Rag(email, dbName);
         let result = await rag.getSetup();
 
-        /*    result.queries = result.queries.map((i) => JSON.parse(i.data));
-        
-           result.queries = result.queries.map((i) => {return {
-                userQuery: i.messages[0].content.replace(/\/\* Annotation:\s*.*?\s*\*\//s, "").trim(),
-                userAnnotation: i.messages[0].content.match(/\/\* Annotation:\s*(.*?)\s*\*\//s)[1].trim(),
-                dataQuery: i.messages[1].content            
-                }
-            })*/
-
-        return new Response(JSON.stringify(
+        let responseData = {};
+        if (session.user.role == 'admin') {
+            responseData =
             {
                 queries: result.queries,
                 dataSchema: result.dataSchema,
                 instructions: result.instructions,
                 shared: shared
             }
+
+        }
+        else {
+            responseData =
+            {
+                queries: result.queries,
+                dataSchema: result.dataSchema,
+                shared: shared
+            }
+        }
+        return new Response(JSON.stringify(
+            responseData
         ), {
             status: 200,
             headers: {

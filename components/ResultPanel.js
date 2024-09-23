@@ -66,7 +66,7 @@ const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
     <div>
       <Tabs>
         <TabList>
-          <Tab>Chat</Tab>
+          <Tab>Results</Tab>
           <Tab>Chart</Tab>
         </TabList>
         <TabPanel>

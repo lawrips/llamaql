@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Rag from '@/lib/rag/sqlite3/rag';
 const utils = require('@/lib/utils/shareUtils');
+const schemaUtils = require('@/lib/utils/schemaUtils');
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
@@ -21,6 +22,11 @@ export async function POST(request, { params }) {
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
   const rag = new Rag(email, dbName);
+
+  if (!instructions) {
+    let setup = await rag.getSetup();
+    instructions = schemaUtils.replacePlaceholders(JSON.parse(setup.instructions).queryInstructions, setup.queries, schema);
+  }
   let result = await rag.query(input, annotation, model, instructions, schema, requery || null);
   console.log(result)
 

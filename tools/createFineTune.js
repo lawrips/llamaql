@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import Rag from '@/lib/rag/sqlite3/rag';
+import utils from '@/lib/utils/schemaUtils';
 
 module.exports = {
     exportJson: async function (username, dbName) {
@@ -11,10 +12,7 @@ module.exports = {
 
         // Convert each document to JSONL format
         result.queries.forEach(doc => {
-            let instructions = JSON.parse(result.instructions[0]).queryInstructions.replaceAll('{examples}', "")
-            instructions = instructions.replaceAll('{schema}', JSON.stringify(result.schema));
-            instructions = instructions.replaceAll('{db}', 'sqlite3');
-            instructions = instructions.replaceAll('{today}', new Date().toLocaleDateString('en-CA'));
+            let instructions = utils.replacePlaceholders(instructions);
                     
             let content = [
                 {

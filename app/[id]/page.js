@@ -23,7 +23,7 @@ function Home({params}) {
 
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-4 lg:px-8">
                 {/* Flex container for title and user info */}
                 <div className="flex justify-between items-center mb-2">
                     {/* Title aligned to the left */}

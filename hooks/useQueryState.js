@@ -68,8 +68,8 @@ export const useQueryState = (appName) => {
             // uncomment these lines below when you want finetunes back in the picture
             //const finetunes = await fetch(`/api/protected/app/${appName}/finetune`).then(res => res.json());
             setModels([
-                { value: "gpt-4o-mini", label: "gpt-4o-mini (default)" },
-                { value: "gpt-4o-2024-08-06", label: "gpt-4o-2024-08-06 (higher quality / higher cost)" },
+                { value: "gpt-4o-mini", label: "gpt-4o-mini (default - fast & efficient)" },
+                { value: "gpt-4o-2024-08-06", label: "gpt-4o (slower & exp - use for building hard queries)" },
                 //...finetunes.map(i => ({ label: `${i.name} (${i.status})`, value: i.name }))
             ]);
         };

@@ -27,7 +27,7 @@ const ShareButton = ({ appName }) => {
             const result = await response.json();
     
     
-            setUrl(`http://llamaql.com/${result.hash}`)
+            setUrl(`https://llamaql.com/${result.hash}`)
             return result;
           } catch (error) {
             console.error('Error in postData:', error);

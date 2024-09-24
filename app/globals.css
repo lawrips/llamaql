@@ -226,3 +226,17 @@ button:active {
     text-wrap: balance;
   }
 }
+
+.tooltip {
+  position: absolute;
+  background-color: #333;
+  color: white;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 16px;
+  top: 50px; /* Distance from the button */
+  left: 50%; /* Center horizontally relative to the button */
+  transform: translateX(-50%); /* Centers it exactly */
+  white-space: nowrap;
+  z-index: 100;
+}

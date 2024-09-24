@@ -34,7 +34,7 @@ const InstructionPanel = ({
         <div className="tab-container">
           <TabList>
             <Tab>Data Query</Tab>
-            {(session.user?.role == 'editor' || session.user?.role == 'admin') ?
+            {(session.user?.role == 'admin') ?
               <>
                 <Tab>Query Instructions</Tab>
                 <Tab>Requery Instructions</Tab>
@@ -63,7 +63,7 @@ const InstructionPanel = ({
                 <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>Run</button>
               </div>
             </TabPanel>
-            {(session.user?.role == 'editor' || session.user?.role == 'admin') ?
+            {(session.user?.role == 'admin') ?
               <>
 
                 <TabPanel>

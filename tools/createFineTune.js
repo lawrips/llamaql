@@ -8,7 +8,7 @@ module.exports = {
         let json = '';
 
         const rag = new Rag(username, dbName);
-        let result = await rag.getSetup();
+        let result = rag.getSetup();
 
         // Convert each document to JSONL format
         //let instructions = utils.replacePlaceholders(JSON.parse(result.instructions).queryInstructions, result.queries, JSON.stringify(result.dataSchema));

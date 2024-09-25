@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
 
     try {
         const rag = new Rag(email, dbName);
-        let result = await rag.getSetup();
+        let result = rag.getSetup();
 
         let responseData = {};
         if (session.user.role == 'admin') {

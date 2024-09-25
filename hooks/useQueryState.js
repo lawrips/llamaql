@@ -95,7 +95,7 @@ export const useQueryState = (appName) => {
                         _instructions = _instructions.replace("{" + item + "}", "")
                     }
                 });
-                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, requery ? dbQuery : null);
+                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
                 console.log(queryData)
                 setDbQuery(queryData.query);
                 const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
@@ -255,7 +255,7 @@ export const useQueryState = (appName) => {
         await fetch(`/api/protected/app/${appName}/instructions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dataInstructions, queryInstructions, requeryInstructions, dataSchema }),
+            body: JSON.stringify({ dataInstructions, queryInstructions, requeryInstructions, dataExplanation }),
         });
         // show confirmation dialog
         setDialogOpen(true);
@@ -397,6 +397,8 @@ export const useQueryState = (appName) => {
         handleSaveInstructions,
         shared,
         dataExamples,
-        dataExplanation
+        setDataExamples,
+        dataExplanation,
+        setDataExplanation
     };
 };

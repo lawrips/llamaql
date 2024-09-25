@@ -15,6 +15,7 @@ const InstructionPanel = ({
   setDataInstructions,
   dataExamples,
   dataExplanation,
+  setDataExplanation,
   instructSubs,
   checkedItems,
   handleInstructSubChange,
@@ -140,28 +141,26 @@ const InstructionPanel = ({
             <TabPanel>
               <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                 <textarea
-                  readOnly
+                  readonly
                   value={dataExamples}
                   placeholder="Data Examples"
                   //onChange={(e) => setDataExamples(e.target.value)}
                   rows={8}
-                  style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
+                  style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
-                {/*<button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button> */}
               </div>
             </TabPanel>
             <TabPanel>
               <div style={{ display: 'flex', alignItems: 'flex-start' }}>
 
                 <textarea
-                  readOnly
                   value={dataExplanation}
                   placeholder="Data Explanation"
-                  //onChange={(e) => setDataExplanation(e.target.value)}
+                  onChange={(e) => setDataExplanation(e.target.value)}
                   rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
-                {/*<button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button> */}
+                <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button> 
               </div>
 
             </TabPanel>

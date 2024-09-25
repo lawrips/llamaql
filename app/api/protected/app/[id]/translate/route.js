@@ -30,7 +30,7 @@ export async function POST(request, {params}) {
 
   let instructions = body.instructions;
   if (!instructions) {
-    let setup = await rag.getSetup();
+    let setup = rag.getSetup();
     instructions = JSON.parse(setup.instructions).dataInstructions;
   }
 

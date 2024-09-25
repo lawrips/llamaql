@@ -11,14 +11,17 @@ export async function POST(request, { params }) {
 
     let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
-    let { queryInstructions, requeryInstructions, dataInstructions, dataSchema } = await request.json();
+    let { queryInstructions, requeryInstructions, dataInstructions, dataExplanation } = await request.json();
 
+    // update instructions
     let result = db.run(email, dbName, 'UPDATE instructions SET data = ?', JSON.stringify({ queryInstructions, dataInstructions, requeryInstructions }));
-    console.log(result.changes)
-    JSON.parse(dataSchema).forEach((schema) => {
-        result = db.run(email, dbName, 'UPDATE schema SET schema = ?, examples = ?, explanation = ? WHERE id = ?', [schema.schema, schema.examples, schema.explanation, schema.id]);
-        console.log(`inserted schema for id ${schema.id} result = ${result.changes}`);
-    })
+
+    // update schema (specifically data instructions with is the last position in the schema table)
+    
+    if (dataExplanation) {
+        result = db.run(email, dbName, `UPDATE schema SET schema = ? WHERE id = (SELECT MAX(id) FROM schema);`, [dataExplanation]);
+        console.log(`inserted dataExplanation result = ${result.changes}`);
+    }
 
 
     return new Response(JSON.stringify({ message: 'Instructions saved' }), {

@@ -23,15 +23,6 @@ export async function POST(request, { params }) {
 
   const rag = new Rag(email, dbName);
 
-  if (!instructions) {    
-    let setup = await rag.getSetup();
-    if (requery) {
-      instructions = schemaUtils.replacePlaceholders(JSON.parse(setup.instructions).requeryInstructions, setup.queries, schema);
-    }
-    else {
-      instructions = schemaUtils.replacePlaceholders(JSON.parse(setup.instructions).queryInstructions, setup.queries, schema);
-    }
-  }
   let result = await rag.query(input, annotation, model, instructions, schema, requery || null);
   console.log(result)
 

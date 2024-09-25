@@ -73,7 +73,6 @@ const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
           <textarea
             value={chatResult}
             rows={10}
-            readOnly
             placeholder="Natural Language Result"
             style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
           />

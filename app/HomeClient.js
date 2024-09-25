@@ -147,6 +147,8 @@ export default function HomeClient({ appName }) {
                     setDataSchema={setDataSchema}
                     dataExamples={dataExamples}
                     dataExplanation={dataExplanation}
+                    setDataExamples={setDataExamples}
+                    setDataExplanation={setDataExplanation}
                     instructSubs={instructSubs}
                     checkedItems={checkedItems}
                     handleInstructSubChange={handleInstructSubChange}

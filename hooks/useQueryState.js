@@ -271,6 +271,16 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
+    const handleCreateTable = async () => {
+        await fetch(`/api/protected/app/${appName}/table`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({say: 'hello', userAnnotation: annotation, dbQuery: dbQuery }),
+        });
+        // show confirmation dialog
+        setDialogOpen(true);
+    };
+
     const handleExportJsonl = async () => {
         console.log(appName)
         let response = await fetch(`/api/protected/app/${appName}/export-json`, { method: 'POST' });
@@ -380,6 +390,7 @@ export const useQueryState = (appName) => {
         handleInstructSubChange,
         handleSaveQuery,
         handleSaveData,
+        handleCreateTable,
         handleExportJsonl,
         handleImportJsonl,
         handleFileChange,

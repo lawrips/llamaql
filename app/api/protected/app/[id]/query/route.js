@@ -12,7 +12,7 @@ export async function POST(request, { params }) {
   let annotation = body.annotation;
   let instructions = body.instructions;
   let schema = body.schema;
-  let requery = body.requery;
+  let generate = body.generate;
   const { id } = params;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
@@ -23,8 +23,9 @@ export async function POST(request, { params }) {
 
   const rag = new Rag(email, dbName);
 
-  let result = await rag.query(input, annotation, model, instructions, schema, requery || null);
+  let result = await rag.query(input, annotation, model, instructions, schema, generate || null);
   console.log(result)
+  console.log('count: ' + result.data.length)
 
   if (result.error == null) {
     return new Response(

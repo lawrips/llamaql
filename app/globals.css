@@ -237,6 +237,7 @@ button:active {
   top: 50px; /* Distance from the button */
   left: 50%; /* Center horizontally relative to the button */
   transform: translateX(-50%); /* Centers it exactly */
-  white-space: nowrap;
+  white-space: wrap;
+  width: 100px;
   z-index: 100;
 }

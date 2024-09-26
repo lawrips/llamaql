@@ -15,6 +15,7 @@ export async function POST(request, {params}) {
   
   //const result = await mongo.execute(JSON.parse(input), dbName);
   const result = db.query(email, dbName, input);
+  console.log("count: " + result.length);
   if (result.err == null) {
     return new Response(
       JSON.stringify(

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import AdmZip from 'adm-zip';
 
 const utils = require('@/lib/utils/typeUtils');
+const schemaUtils = require('@/lib/utils/schemaUtils');
 const instructions = require('@/lib/constants/instructions')
 
 import Rag from '@/lib/rag/sqlite3/rag';
@@ -19,7 +20,7 @@ const processCSV = async (db, csvContent, csvFilename) => {
   // insert csv data into sql table
   let result = await insertData(db, csvFilename.replace('.csv', ''), csvContent);
   // create dataSchema for this table
-  createSchema(db, csvFilename.replace('.csv', ''));
+  schemaUtils.createSchema(db, csvFilename.replace('.csv', ''));
 
   return result;
 }
@@ -122,43 +123,15 @@ export async function POST(request, { params }) {
     // one time setup for instructions, etc
     createSetup(db);
 
-    // populate example q's if they're empty
-    let stmt = db.prepare(`SELECT * FROM queries`);
-    let existingQueries = stmt.all();
+    // create example queries
+    let schema = await createExamples(db, session.user.email, dbName, instructions );
 
-    stmt = db.prepare(`SELECT * FROM schema`);
-    let schema = stmt.all();
-
-    if (existingQueries.length == 0) {
-
-      let examples = await rag.createExamples(instructions.setupInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
-      console.log(examples);
-
-
-      for (let example of examples) {
-        myDb.run(session.user.email, dbName,
-          `INSERT INTO queries (userQuery, userAnnotation) 
-      VALUES (?, ?)
-      ON CONFLICT(userQuery) 
-      DO UPDATE SET 
-        userAnnotation = excluded.userAnnotation
-        WHERE queries.userQuery = excluded.userQuery`,
-          [example.query, example.annotation]);
-      }
-
-    }
-
-    let explanation = await rag.createSchema(instructions.schemaInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
-
-    // Insert the text row
+    // create explanation of data schema
+    let explanation = await rag.createSchemaExplanation(instructions.schemaInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
     db.prepare('INSERT INTO schema (schema) VALUES (?)').run([explanation]);
 
 
-
-
     db.close();
-
-
 
     return new Response(
       JSON.stringify(
@@ -186,7 +159,7 @@ export async function POST(request, { params }) {
 
 
 
-const createSetup = async (db) => {
+const createSetup = (db) => {
 
   db.exec(`CREATE TABLE instructions (data TEXT);`);
   db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions)]);
@@ -200,36 +173,31 @@ const createSetup = async (db) => {
   console.log('created saved_data')
 }
 
-const createSchema = (db, tableName) => {
+const createExamples = async (db, email, dbName, instructions) => {
+  // populate example q's if they're emptyy
+  let stmt = db.prepare(`SELECT * FROM queries`);
+  let existingQueries = stmt.all();
 
-  db.exec(`
-      CREATE TABLE IF NOT EXISTS schema (id INTEGER PRIMARY KEY, schema TEXT, examples TEXT);
-    `);
+  stmt = db.prepare(`SELECT * FROM schema`);
+  let schema = stmt.all();
 
-  let schema = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?`).get(`data_${tableName}`);
+  if (existingQueries.length == 0) {
+    let examples = await rag.createExamples(instructions.setupInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
+    console.log(examples);
 
-  console.log('schema:')
-  console.log(schema.sql);
+    for (let example of examples) {
+      myDb.run(email, dbName,
+        `INSERT INTO queries (userQuery, userAnnotation) 
+      VALUES (?, ?)
+      ON CONFLICT(userQuery) 
+      DO UPDATE SET 
+        userAnnotation = excluded.userAnnotation
+        WHERE queries.userQuery = excluded.userQuery`,
+        [example.query, example.annotation]);
+    }
 
-  const stmt = db.prepare(`SELECT * FROM data_${tableName}`);
-  let exampleData = stmt.all();
-  console.log('exampleData (first row):')
-  console.log(exampleData[0])
-
-  // Insert the text row
-  let cleanData = `\nTABLE: data_${tableName}\n`;
-  cleanData += Object.keys(exampleData[0]).join(',') + '\n';
-  for (let i = 0; i < 5; i++) {
-    Object.entries(exampleData[i]).forEach(([key, value]) => {
-      cleanData += `${value},`;
-    });
-    cleanData = cleanData.slice(0,cleanData.length -2);
-    cleanData += '\n';
   }
-
-  db.prepare('INSERT INTO schema (schema, examples) VALUES (?, ?)').run([schema.sql, cleanData]);
-
-  console.log('created schema')
+  return schema;
 }
 
 const createDataTable = (db, tableName, parsedData) => {

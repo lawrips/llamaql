@@ -14,6 +14,8 @@ const InstructionPanel = ({
   dataInstructions,
   setDataInstructions,
   dataExamples,
+  chatResult,
+  setChatResult,
   dataExplanation,
   setDataExplanation,
   instructSubs,
@@ -34,7 +36,8 @@ const InstructionPanel = ({
       <Tabs>
         <div className="tab-container">
           <TabList>
-            <Tab>Data Query</Tab>
+            <Tab>Parsed Query</Tab>
+            <Tab>Raw Response</Tab>
             {(session.user?.role == 'admin') ?
               <>
                 <Tab>Query Instructions</Tab>
@@ -56,7 +59,7 @@ const InstructionPanel = ({
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 <textarea
                   value={dbQuery}
-                  placeholder="Data Query"
+                  placeholder="SQL Query Will Appear Here"
                   onChange={(e) => setDbQuery(e.target.value)}
                   rows={8}
                   style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
@@ -64,6 +67,17 @@ const InstructionPanel = ({
                 <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>Run</button>
               </div>
             </TabPanel>
+            <TabPanel>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <textarea
+                  value={chatResult}
+                  placeholder="Messages will appear here"
+                  onChange={(e) => setChatResult(e.target.value)}
+                  rows={8}
+                  style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
+                />&nbsp;&nbsp;
+              </div>
+            </TabPanel>            
             {(session.user?.role == 'admin') ?
               <>
 
@@ -160,7 +174,7 @@ const InstructionPanel = ({
                   rows={8}
                   style={{ width: '90%', overflowY: 'scroll', marginBottom: '10px' }}
                 />&nbsp;
-                <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button> 
+                <button onClick={handleSaveInstructions} style={{ width: '150px', marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}>Save</button>
               </div>
 
             </TabPanel>

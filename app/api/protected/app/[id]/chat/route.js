@@ -3,33 +3,36 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Rag from '@/lib/rag/sqlite3/rag';
 const utils = require('@/lib/utils/shareUtils');
 const schemaUtils = require('@/lib/utils/schemaUtils');
+const instructions = require('@/lib/constants/instructions');
 const conversations = require('@/lib/utils/converastionsUtils');
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
-  console.log("****** NEW QUERY REQUEST ******** ")
 
   const body = await request.json();
-  let input = body.input;
-  let annotation = body.annotation;
-  let instructions = body.instructions;
+  let userQuery = body.userQuery;
+  let userChat = body.userChat;
   let schema = body.schema;
-  let generate = body.generate;
+  let dbQuery = body.dbQuery;
+  let dbResult = body.dbResult;
+  let instructions = body.instructions;
+
+
   const { id } = params;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
 
-
+  console.log("****** NEW CHAT REQUEST ******** ")
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
-  // reset message history
-  conversations.deleteAll(dbName, session.user.email);
-
+  // add this conversation to the history
+  conversations.insert(dbName, session.user.email, dbQuery, dbResult, userChat );
+  let history = conversations.getAll(dbName, session.user.email);
 
   const rag = new Rag(email, dbName);
-
-  let result = await rag.query(input, annotation, model, instructions, schema, generate || null);
-  console.log('nuber of rows in result: ' + result.data?.length)
+  
+  let result = await rag.chat(userQuery, history, instructions, schema);
+  //console.log(result)
 
   if (result.error == null) {
     return new Response(
@@ -45,7 +48,7 @@ export async function POST(request, { params }) {
   } else {
     console.log(result.error);
     console.log(result.query);
-    return new Response(JSON.stringify({ chat: result.chat, query: result.query, error: result.error.toString() }),
+    return new Response(JSON.stringify({ query: JSON.stringify(result.query), chat: result.chat, error: JSON.stringify(result.error.toString()) }),
       {
         status: 400,
         headers: { 'Content-Type': 'application/json' }

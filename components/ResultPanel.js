@@ -34,9 +34,8 @@ const colors = [
 ];
 
 
-const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
+const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn, chartKeys, userChat, setUserChat }) => {
   const [chartType, setChartType] = useState('BarChart');
-
 
   let ChartComponent;
   let chartSpecificProps = {};
@@ -71,11 +70,24 @@ const ResultPanel = ({ chatResult, chartData, chartTicks, chartKeys }) => {
         </TabList>
         <TabPanel>
           <textarea
-            value={chatResult}
+            value={translatedResult}
             rows={10}
-            placeholder="Natural Language Result"
+            placeholder="Your Results Will Appear Here"
             style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
           />
+    <div className="relative">
+    <input
+      className="w-full p-2 border rounded"
+      value={userChat}
+      autoComplete="off"
+      id="customField22"
+      style={{ width: '100%', boxSizing: 'border-box' }}
+      onKeyDown={handleChatReturn}
+      type="text"
+      placeholder="Follow up feedback and refinement"
+      onChange={(e) => setUserChat(e.target.value)}
+    />
+  </div>          
         </TabPanel>
         <TabPanel>
           <div>

@@ -18,11 +18,13 @@ export default function HomeClient({ appName }) {
     const {
         userQuery,
         setUserQuery,
+        userChat,
+        setUserChat,
         annotation,
         setAnnotation,
         dbQuery,
         setDbQuery,
-        chatResult,
+        translatedResult,
         chartData,
         chartTicks,
         chartKeys,
@@ -36,6 +38,8 @@ export default function HomeClient({ appName }) {
         handleQuery,
         handleDirectQuery,
         handleSaveQuery,
+        handleChat,
+        handleChatReturn,
         handleSaveData,
         handleCreateTable,
         handleExportJsonl,        
@@ -66,7 +70,9 @@ export default function HomeClient({ appName }) {
         dialogOpen,
         handleDialogClose,
         handleSaveInstructions,
-        shared
+        shared,
+        chatResult,
+        setChatResult
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
     const [visibleTooltipIndex, setVisibleTooltipIndex] = useState(null);
@@ -161,17 +167,23 @@ export default function HomeClient({ appName }) {
                 handleInstructSubChange={handleInstructSubChange}
                 handleDirectQuery={handleDirectQuery}
                 handleSaveInstructions={handleSaveInstructions}
+                chatResult={chatResult}
+                setChatResult={setChatResult}
             />
 
             <ResultPanel
-                chatResult={chatResult}
+                translatedResult={translatedResult}
                 chartData={chartData}
                 chartTicks={chartTicks}
                 chartKeys={chartKeys}
+                userChat={userChat}
+                setUserChat={setUserChat}
+                handleChatReturn={handleChatReturn}
             />
 
             <ActionButtons
                 handleSaveQuery={handleSaveQuery}
+                handleChat={handleChat}
                 handleSaveData={handleSaveData}
                 handleCreateTable={handleCreateTable}
                 handleExportJsonl={handleExportJsonl}
@@ -180,6 +192,7 @@ export default function HomeClient({ appName }) {
                 fileInputRef={fileInputRef}
                 handleFileChange={handleFileChange}
                 shared={shared}
+                userChat={userChat}
             />
             <br />
             By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.

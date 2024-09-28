@@ -1,14 +1,14 @@
 import React from 'react';
 import { useSession } from "next-auth/react";
 
-const ActionButtons = ({ handleSaveQuery, handleSaveData, handleCreateTable, handleExportJsonl, handleImportJsonl, fileInputRef, handleFileChange, handleFinetune, shared }) => {
+const ActionButtons = ({ handleSaveQuery, handleSaveData, handleChat, handleChatReturn, handleCreateTable, handleExportJsonl, handleImportJsonl, fileInputRef, handleFileChange, handleFinetune, shared }) => {
   const { data: session } = useSession(); // Get session data
 
-  console.log('shared is ' + shared)
   return (
     <div>
+        <button onClick={handleChat} style={{ marginRight: '10px', marginTop: '10px' }}>Chat</button>
         <button onClick={handleSaveQuery} style={{ marginRight: '10px', marginTop: '10px' }}>Save Query</button>
-      {
+        {
         !shared && (session.user?.role == 'editor' || session.user?.role == 'admin') ?
           <span>
             <button onClick={handleCreateTable} style={{ marginRight: '10px', marginTop: '10px' }}>Create Table</button>

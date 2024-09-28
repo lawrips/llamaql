@@ -5,9 +5,12 @@ import { generateNiceTicks } from '../lib/utils/graphUtils';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
+    const [userChat, setUserChat] = useState('');
     const [annotation, setAnnotation] = useState('');
     const [dbQuery, setDbQuery] = useState('');
+    const [dbResult, setDbResult] = useState('');
     const [chatResult, setChatResult] = useState('');
+    const [translatedResult, setTranslatedResult] = useState('');
     const [chartData, setChartData] = useState([]);
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
     const [loading, setLoading] = useState(false);
@@ -87,6 +90,8 @@ export const useQueryState = (appName) => {
     const handleQuery = async (requery) => {
         if (userQuery) {
             setLoading(true);
+            setTranslatedResult('');
+            setUserChat('');
             setChatResult('');
             try {
                 let _instructions = requery ? requeryInstructions : queryInstructions;
@@ -96,14 +101,26 @@ export const useQueryState = (appName) => {
                     }
                 });
                 const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
+                console.log('queryData:')
                 console.log(queryData)
-                setDbQuery(queryData.query);
-                const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
-                setChatResult(translatedData.data);
-                makeChart(translatedData.data);
+                if (!queryData.error) {
+                    setDbQuery(queryData.query);
+                    setDbResult(queryData.data);
+                    setChatResult(queryData.chat);
+                    const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
+                    setTranslatedResult(translatedData.data);
+                    makeChart(translatedData.data);
+                }
+                else {
+                    console.error('Error during query:', queryData.error);
+                    setDbQuery(queryData.query);
+                    setChatResult(queryData.chat);
+                    setDbResult(queryData.data);
+                    setTranslatedResult(queryData.error);
+                }
             } catch (error) {
                 console.error('Error during query:', error);
-                setChatResult(error);
+                setTranslatedResult(error);
             } finally {
                 setLoading(false);
             }
@@ -112,16 +129,24 @@ export const useQueryState = (appName) => {
 
     const handleDirectQuery = async () => {
         setLoading(true);
+        setTranslatedResult('');
         setChatResult('');
         try {
             const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
-            setDbQuery(queryData.query);
-            const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
-            setChatResult(translatedData.data);
-            makeChart(translatedData.data);
+            console.log(queryData)
+            if (!queryData.error) {
+                setDbQuery(queryData.query);
+                const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
+                setTranslatedResult(translatedData.data);
+                makeChart(translatedData.data);
+            }
+            else {
+                console.error('Error during direct query:', queryData.error);
+                setTranslatedResult(queryData.error);
+            }
         } catch (error) {
-            console.error('Error during direct query:', error);
-            setChatResult(error);
+            console.error('Exception during direct query:', error);
+            setTranslatedResult(error);
         } finally {
             setLoading(false);
         }
@@ -138,13 +163,13 @@ export const useQueryState = (appName) => {
         console.log(queries)
         console.log(matchedQuery)
         if (matchedQuery) {
-            setChatResult('')
+            setTranslatedResult('')
             setAnnotation(matchedQuery.userAnnotation || '');
             setDbQuery(matchedQuery.dbQuery);
             //setFocusedInput(null);
 
             if (matchedQuery.dbResult) {
-                setChatResult(matchedQuery.dbResult);
+                setTranslatedResult(matchedQuery.dbResult);
                 makeChart(matchedQuery.dbResult);
             }
         }
@@ -240,7 +265,7 @@ export const useQueryState = (appName) => {
         await fetch(`/api/protected/app/${appName}/save-query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: chatResult }),
+            body: JSON.stringify({ userQuery: userQuery, userAnnotation: annotation, dbQuery: dbQuery, dbResult: translatedResult }),
         });
         // show confirmation dialog
         setDialogOpen(true);
@@ -261,11 +286,48 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
+    const handleChatReturn = (e) => {
+        if (e.key === 'Enter') {
+            // Trigger the button click event
+            handleChat();
+        }
+    };
+
+    const handleChat = async () => {
+        setLoading(true);
+        console.log('dbQuery')
+        console.log(dbQuery);
+        console.log('dbResult')
+        console.log(dbResult);
+        console.log(userChat)
+        try {
+
+            const res = await fetch(`/api/protected/app/${appName}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userQuery: `${userQuery} (${annotation})`, schema: `${dataSchema}\n${dataExplanation}`, dbQuery: dbQuery, dbResult: dbResult, userChat: userChat, instructions: queryInstructions }),
+            });
+            let queryData = await res.json();
+
+            console.log(queryData)
+            setDbQuery(queryData.query);
+            setDbResult(queryData.data);
+            setChatResult(queryData.chat);
+            const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
+            setTranslatedResult(translatedData.data);
+        } catch (ex) {
+            console.log(ex)
+        } finally {
+            setLoading(false);
+        }
+
+    };
+
     const handleSaveData = async () => {
         await fetch(`/api/protected/app/${appName}/save-data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: userQuery, data: chatResult }),
+            body: JSON.stringify({ query: userQuery, data: translatedResult }),
         });
         // show confirmation dialog
         setDialogOpen(true);
@@ -275,7 +337,7 @@ export const useQueryState = (appName) => {
         await fetch(`/api/protected/app/${appName}/table`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({say: 'hello', userAnnotation: annotation, dbQuery: dbQuery }),
+            body: JSON.stringify({ say: 'hello', userAnnotation: annotation, dbQuery: dbQuery }),
         });
         // show confirmation dialog
         setDialogOpen(true);
@@ -362,11 +424,15 @@ export const useQueryState = (appName) => {
     return {
         userQuery,
         setUserQuery,
+        userChat,
+        setUserChat,
         annotation,
         setAnnotation,
         dbQuery,
         setDbQuery,
         chatResult,
+        setChatResult,
+        translatedResult,
         chartData,
         chartTicks,
         chartKeys,
@@ -406,6 +472,8 @@ export const useQueryState = (appName) => {
         dialogOpen,
         handleDialogClose,
         handleSaveInstructions,
+        handleChat,
+        handleChatReturn,
         shared,
         dataExamples,
         setDataExamples,

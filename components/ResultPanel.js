@@ -75,19 +75,19 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
             placeholder="Your Results Will Appear Here"
             style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
           />
-    <div className="relative">
-    <input
-      className="w-full p-2 border rounded"
-      value={userChat}
-      autoComplete="off"
-      id="customField22"
-      style={{ width: '100%', boxSizing: 'border-box' }}
-      onKeyDown={handleChatReturn}
-      type="text"
-      placeholder="Follow up feedback and refinement"
-      onChange={(e) => setUserChat(e.target.value)}
-    />
-  </div>          
+          <div className="relative">
+            <input
+              className="w-full p-2 border rounded"
+              value={userChat}
+              autoComplete="off"
+              id="customField22"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+              onKeyDown={handleChatReturn}
+              type="text"
+              placeholder="Ask follow questions here"
+              onChange={(e) => setUserChat(e.target.value)}
+            />
+          </div>
         </TabPanel>
         <TabPanel>
           <div>
@@ -126,8 +126,8 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                   />
                   <YAxis ticks={chartTicks.ticks} domain={[chartTicks.niceMin, chartTicks.niceMax]} />
                   <Tooltip />
-                  <Legend 
-                    wrapperStyle={{                      
+                  <Legend
+                    wrapperStyle={{
                       position: 'relative', // Make sure the position is relative to apply the offset
                     }} />
 

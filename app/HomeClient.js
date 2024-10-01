@@ -41,7 +41,6 @@ export default function HomeClient({ appName }) {
         handleChat,
         handleChatReturn,
         handleSaveData,
-        handleCreateTable,
         handleExportJsonl,        
         handleImportJsonl,
         fileInputRef,
@@ -72,7 +71,13 @@ export default function HomeClient({ appName }) {
         handleSaveInstructions,
         shared,
         chatResult,
-        setChatResult
+        setChatResult,
+        handleCreateTable,
+        handleCancelTable,
+        handleOpenCreateDialog,
+        isCreateModalOpen,
+        setIsCreateModalOpen,
+        createTableCount
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
     const [visibleTooltipIndex, setVisibleTooltipIndex] = useState(null);
@@ -185,7 +190,6 @@ export default function HomeClient({ appName }) {
                 handleSaveQuery={handleSaveQuery}
                 handleChat={handleChat}
                 handleSaveData={handleSaveData}
-                handleCreateTable={handleCreateTable}
                 handleExportJsonl={handleExportJsonl}
                 handleImportJsonl={handleImportJsonl}
                 handleFinetune={handleFinetune}
@@ -193,6 +197,14 @@ export default function HomeClient({ appName }) {
                 handleFileChange={handleFileChange}
                 shared={shared}
                 userChat={userChat}
+                // table creation 
+                handleOpenCreateDialog={handleOpenCreateDialog}
+                handleCreateTable={handleCreateTable}
+                handleCancelTable={handleCancelTable}
+                isCreateModalOpen={isCreateModalOpen}
+                setIsCreateModalOpen={setIsCreateModalOpen}
+                createTableCount={createTableCount}
+                
             />
             <br />
             By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.

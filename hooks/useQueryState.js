@@ -31,6 +31,8 @@ export const useQueryState = (appName) => {
     const [chartKeys, setChartKeys] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [shared, setShared] = useState(false);
+    const [createTableCount, setCreateTableCount] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);  // State to control modal visibility
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -333,16 +335,6 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
-    const handleCreateTable = async () => {
-        await fetch(`/api/protected/app/${appName}/table`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ say: 'hello', userAnnotation: annotation, dbQuery: dbQuery }),
-        });
-        // show confirmation dialog
-        setDialogOpen(true);
-    };
-
     const handleExportJsonl = async () => {
         console.log(appName)
         let response = await fetch(`/api/protected/app/${appName}/export-json`, { method: 'POST' });
@@ -410,6 +402,52 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
+    const handleOpenCreateDialog = async () => {
+        if (dbQuery) {
+            setLoading(true);
+            try {
+                const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
+                console.log(queryData)
+                if (!queryData.error) {
+                    setDbQuery(queryData.query);
+                    setCreateTableCount(queryData.data?.length);
+                    setIsCreateModalOpen(true);
+                }
+                else {
+                    console.error('Error during direct query:', queryData.error);
+                    setTranslatedResult(queryData.error);
+                }
+            } catch (error) {
+                console.error('Exception during direct query:', error);
+                setTranslatedResult(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+    };
+
+    // Function that handles the creation of a table
+    const handleCreateTable = async (tableName) => {
+        setIsCreateModalOpen(false);  // Close the modal after creation
+        setLoading(true);
+
+        await fetch(`/api/protected/app/${appName}/table`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableName: tableName, dbQuery: dbQuery }),
+        });
+
+        // show confirmation dialog
+        setLoading(false);
+        setDialogOpen(true);
+    };
+
+    // Function that handles the cancel action
+    const handleCancelTable = () => {
+        setIsCreateModalOpen(false);  // Close the modal when "Cancel" is clicked
+    };
+
 
     const getInputStyle = (inputType) => {
         const baseStyle = {
@@ -457,6 +495,7 @@ export const useQueryState = (appName) => {
         handleSaveQuery,
         handleSaveData,
         handleCreateTable,
+        handleCancelTable,
         handleExportJsonl,
         handleImportJsonl,
         handleFileChange,
@@ -478,6 +517,10 @@ export const useQueryState = (appName) => {
         dataExamples,
         setDataExamples,
         dataExplanation,
-        setDataExplanation
+        setDataExplanation,
+        isCreateModalOpen,
+        setIsCreateModalOpen,
+        handleOpenCreateDialog,
+        createTableCount
     };
 };

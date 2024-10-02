@@ -6,7 +6,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 
-const CreateTableModal = ({ open, handleCreateTable, handleCancelTable, createTableCount }) => {
+const CreateTableModal = ({ open, handleCreateTable, handleCancelTable, createTableCount, createModal }) => {
     const [tableName, setTableName] = useState('');
 
     // Reset tableName when the dialog is opened
@@ -29,12 +29,15 @@ const CreateTableModal = ({ open, handleCreateTable, handleCancelTable, createTa
             disableEscapeKeyDown // Prevent closing with the "Esc" key
             disableBackdropClick // Prevent closing by clicking the backdrop
         >
-            <DialogTitle>Store Results as Table</DialogTitle>
+            <DialogTitle>Table Management</DialogTitle>
             <DialogContent>
-                <div>Create a table of {createTableCount} rows?</div><br />
+                {createModal == true ? <div>Create a table of {createTableCount} rows?</div> : <div>Delete a table by entering its name</div>}
+                <br />
                 <TextField
                     label="Table Name"
                     fullWidth
+                    autoComplete="off"
+                    id="customField22"      
                     required
                     variant="outlined"
                     value={tableName}
@@ -45,7 +48,7 @@ const CreateTableModal = ({ open, handleCreateTable, handleCancelTable, createTa
             <DialogActions>
                 <Button onClick={handleCancelTable}>Cancel</Button>
                 <Button onClick={onCreateClick} disabled={isCreateDisabled}>
-                    Create
+                    Confirm
                 </Button>
             </DialogActions>
         </Dialog>

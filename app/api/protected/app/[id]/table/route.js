@@ -17,7 +17,7 @@ export async function POST(request, { params }) {
 
     const tableName = body.tableName;
 
-    await runProcess(dbName, tableName, true);
+    await runProcess(dbName, tableName, session.user.email, body.dbQuery, true);
 
     return new Response(JSON.stringify({ message: 'Table Created!' }), {
         status: 201,
@@ -32,9 +32,12 @@ export async function DELETE(request, { params }) {
 
     const body = await request.json();
 
-    const tableName = body.tableName;
+    let tableName = body.tableName;
+    if (tableName.startsWith('data_')) {
+        tableName = tableName.replace('data_', '');
+    }
 
-    await runProcess(dbName, tableName, false);
+    await runProcess(dbName, tableName, session.user.email, null, false);
 
     return new Response({
         status: 204,
@@ -43,14 +46,14 @@ export async function DELETE(request, { params }) {
 }
 
 
-async function runProcess(dbName, tableName, runInsert) {
-    const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
+async function runProcess(dbName, tableName, email, dbQuery, runInsert) {
+    const directoryPath = path.join(process.cwd(), `db/${email}/`);
     const db = new Database(`${directoryPath}${dbName}.db`);
     db.pragma('journal_mode = WAL');
 
-    let result = myDb.run(session.user.email, id, `DROP TABLE IF EXISTS data_${tableName}`, []);
+    let result = myDb.run(email, dbName, `DROP TABLE IF EXISTS data_${tableName}`, []);
     if (runInsert) {
-        result = myDb.run(session.user.email, id, `CREATE TABLE data_${tableName} AS\n ${body.dbQuery}`, []);
+        result = myDb.run(email, dbName, `CREATE TABLE data_${tableName} AS\n ${dbQuery}`, []);
     }
 
     // delete existing explanation and if this schema has already been added
@@ -58,7 +61,9 @@ async function runProcess(dbName, tableName, runInsert) {
     db.prepare(`DELETE FROM schema WHERE name = ?`).run([`data_${tableName}`]);
 
     // adds this new table to the schema
-    schemaUtils.createSchema(db, tableName);
+    if (runInsert) {
+        schemaUtils.createSchema(db, tableName);
+    }
 
     // fetch updated schemas
     let stmt = db.prepare(`SELECT * FROM schema`);

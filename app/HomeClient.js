@@ -73,10 +73,12 @@ export default function HomeClient({ appName }) {
         chatResult,
         setChatResult,
         handleCreateTable,
+        handleDeleteTable,
         handleCancelTable,
         handleOpenCreateDialog,
+        handleOpenDeleteDialog,
         isCreateModalOpen,
-        setIsCreateModalOpen,
+        isDeleteModalOpen,
         createTableCount
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
@@ -199,10 +201,12 @@ export default function HomeClient({ appName }) {
                 userChat={userChat}
                 // table creation 
                 handleOpenCreateDialog={handleOpenCreateDialog}
+                handleOpenDeleteDialog={handleOpenDeleteDialog}
                 handleCreateTable={handleCreateTable}
+                handleDeleteTable={handleDeleteTable}
                 handleCancelTable={handleCancelTable}
                 isCreateModalOpen={isCreateModalOpen}
-                setIsCreateModalOpen={setIsCreateModalOpen}
+                isDeleteModalOpen={isDeleteModalOpen}
                 createTableCount={createTableCount}
                 
             />

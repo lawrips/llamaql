@@ -249,7 +249,7 @@ button:active {
 }
 
 .custom-mui-textfield .MuiOutlinedInput-input {
-  padding: 0.5rem 0; /* Top and bottom padding */
+  padding: 0.5rem; /* Top and bottom padding */
   height: auto; /* Ensure height adjusts correctly */
 }
 

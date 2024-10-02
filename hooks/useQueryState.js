@@ -31,8 +31,9 @@ export const useQueryState = (appName) => {
     const [chartKeys, setChartKeys] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [shared, setShared] = useState(false);
-    const [createTableCount, setCreateTableCount] = useState(false);
+    const [createTableCount, setCreateTableCount] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);  // State to control modal visibility
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);  // State to control modal visibility
     const fileInputRef = useRef(null);
     const router = useRouter();
 
@@ -410,6 +411,7 @@ export const useQueryState = (appName) => {
                 console.log(queryData)
                 if (!queryData.error) {
                     setDbQuery(queryData.query);
+                    console.log("count: " + queryData.data?.length );
                     setCreateTableCount(queryData.data?.length);
                     setIsCreateModalOpen(true);
                 }
@@ -425,6 +427,10 @@ export const useQueryState = (appName) => {
             }
         }
 
+    };
+
+    const handleOpenDeleteDialog = async () => {
+        setIsDeleteModalOpen(true);
     };
 
     // Function that handles the creation of a table
@@ -443,9 +449,26 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
+    // Function that handles the creation of a table
+    const handleDeleteTable = async (tableName) => {
+        setIsDeleteModalOpen(false);  // Close the modal after creation
+        setLoading(true);
+
+        await fetch(`/api/protected/app/${appName}/table`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableName: tableName }),
+        });
+
+        // show confirmation dialog
+        setLoading(false);
+        setDialogOpen(true);
+    };
+
     // Function that handles the cancel action
     const handleCancelTable = () => {
         setIsCreateModalOpen(false);  // Close the modal when "Cancel" is clicked
+        setIsDeleteModalOpen(false);  // Close the modal when "Cancel" is clicked
     };
 
 
@@ -495,6 +518,7 @@ export const useQueryState = (appName) => {
         handleSaveQuery,
         handleSaveData,
         handleCreateTable,
+        handleDeleteTable,
         handleCancelTable,
         handleExportJsonl,
         handleImportJsonl,
@@ -519,8 +543,10 @@ export const useQueryState = (appName) => {
         dataExplanation,
         setDataExplanation,
         isCreateModalOpen,
-        setIsCreateModalOpen,
+        isDeleteModalOpen,
+        setIsDeleteModalOpen,
         handleOpenCreateDialog,
+        handleOpenDeleteDialog,
         createTableCount
     };
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult } from '../lib/utils/queryUtils';
+import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult, translateChartResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 import { generateNiceTicks } from '../lib/utils/graphUtils';
 
@@ -27,7 +27,7 @@ export const useQueryState = (appName) => {
     const [showDropdown, setShowDropdown] = useState('');
     const [queries, setQueries] = useState({});
     const [focusedInput, setFocusedInput] = useState(null);
-    const [chartTicks, setChartTicks] = useState({});
+    const [chartTicks, setChartTicks] = useState({ ticks: [], niceMin: 0, niceMax: 0 });
     const [chartKeys, setChartKeys] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [shared, setShared] = useState(false);
@@ -96,6 +96,7 @@ export const useQueryState = (appName) => {
             setTranslatedResult('');
             setUserChat('');
             setChatResult('');
+            let queryData;
             try {
                 let _instructions = requery ? requeryInstructions : queryInstructions;
                 instructSubs.forEach((item) => {
@@ -103,7 +104,7 @@ export const useQueryState = (appName) => {
                         _instructions = _instructions.replace("{" + item + "}", "")
                     }
                 });
-                const queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
+                queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
                 console.log('queryData:')
                 console.log(queryData)
                 if (!queryData.error) {
@@ -112,7 +113,6 @@ export const useQueryState = (appName) => {
                     setChatResult(queryData.chat);
                     const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
                     setTranslatedResult(translatedData.data);
-                    makeChart(translatedData.data);
                 }
                 else {
                     console.error('Error during query:', queryData.error);
@@ -127,6 +127,13 @@ export const useQueryState = (appName) => {
             } finally {
                 setLoading(false);
             }
+
+            // now in the background get chart translation
+            console.log(queryData.data);
+            const translatedData = await translateChartResult(selectedModel, appName, queryData.data);
+            setChartData(translatedData.data);
+            makeChart(translatedData.data);
+
         }
     };
 
@@ -141,7 +148,6 @@ export const useQueryState = (appName) => {
                 setDbQuery(queryData.query);
                 const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
                 setTranslatedResult(translatedData.data);
-                makeChart(translatedData.data);
             }
             else {
                 console.error('Error during direct query:', queryData.error);
@@ -296,6 +302,17 @@ export const useQueryState = (appName) => {
         }
     };
 
+    const handleChartClicked = async () => {
+        if (!chartData) {
+            setLoading(true);
+            console.log(dbResult);
+            const translatedData = await translateChartResult(selectedModel, appName, dbResult);
+            setChartData(translatedData.data);
+            makeChart(translatedData.data);
+            setLoading(false);
+        }
+    };
+
     const handleChat = async () => {
         setLoading(true);
         console.log('dbQuery')
@@ -411,7 +428,7 @@ export const useQueryState = (appName) => {
                 console.log(queryData)
                 if (!queryData.error) {
                     setDbQuery(queryData.query);
-                    console.log("count: " + queryData.data?.length );
+                    console.log("count: " + queryData.data?.length);
                     setCreateTableCount(queryData.data?.length);
                     setIsCreateModalOpen(true);
                 }
@@ -547,6 +564,7 @@ export const useQueryState = (appName) => {
         setIsDeleteModalOpen,
         handleOpenCreateDialog,
         handleOpenDeleteDialog,
-        createTableCount
+        createTableCount,
+        handleChartClicked
     };
 };

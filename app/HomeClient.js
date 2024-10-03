@@ -79,7 +79,8 @@ export default function HomeClient({ appName }) {
         handleOpenDeleteDialog,
         isCreateModalOpen,
         isDeleteModalOpen,
-        createTableCount
+        createTableCount,
+        handleChartClicked
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
     const [visibleTooltipIndex, setVisibleTooltipIndex] = useState(null);
@@ -186,6 +187,7 @@ export default function HomeClient({ appName }) {
                 userChat={userChat}
                 setUserChat={setUserChat}
                 handleChatReturn={handleChatReturn}
+                handleChartClicked={handleChartClicked}
             />
 
             <ActionButtons

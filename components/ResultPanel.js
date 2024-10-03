@@ -34,7 +34,7 @@ const colors = [
 ];
 
 
-const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn, chartKeys, userChat, setUserChat }) => {
+const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn, chartKeys, userChat, setUserChat, handleChartClicked }) => {
   const [chartType, setChartType] = useState('BarChart');
 
   let ChartComponent;
@@ -124,7 +124,22 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                       fontSize: 14
                     }}
                   />
-                  <YAxis ticks={chartTicks.ticks} domain={[chartTicks.niceMin, chartTicks.niceMax]} />
+                  <YAxis
+                    allowDataOverflow={true}
+                    yAxisId="left"
+                    ticks={chartTicks.ticks || []}
+                    domain={[chartTicks.niceMin,chartTicks.niceMax]} />
+                  {<YAxis
+                    allowDataOverflow={true}
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 100]} // You can adjust the domain for the right Y-axis
+                    tick={{
+                      color: colors[1],
+                      fill: '#999', // Customize the appearance if necessary
+                      fontSize: 12
+                    }}
+                  />}
                   <Tooltip />
                   <Legend
                     wrapperStyle={{
@@ -134,11 +149,12 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                   {/* Conditionally render data components based on chart type */}
                   {chartKeys.map((key, index) => {
                     const color = colors[index % colors.length];
+                    const yAxisId = index % 2 === 0 ? 'left' : 'right';
                     switch (chartType) {
                       case 'BarChart':
-                        return <Bar key={key} dataKey={key} fill={color} />;
+                        return <Bar yAxisId={yAxisId} key={key} dataKey={key} fill={color} />;
                       case 'LineChart':
-                        return <Line key={key} type="monotone" dataKey={key} stroke={color} strokeWidth={2} />;
+                        return <Line yAxisId={yAxisId} key={key} type="monotone" dataKey={key} stroke={color} strokeWidth={2} />;
                       case 'AreaChart':
                         return <Area key={key} type="monotone" dataKey={key} stroke={color} fill={color} />;
                       case 'StackedAreaChart':
@@ -146,7 +162,8 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                       default:
                         return null;
                     }
-                  })}
+                  })
+                    }
                 </ChartComponent>
               ) : (
                 // Special handling for RadarChart

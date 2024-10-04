@@ -269,3 +269,14 @@ button:active {
   border-color: #3f51b5; /* Focused border color */
   border-width: 2px; /* Focused border thickness */
 }
+
+.markdown-content {
+ 
+  white-space: pre-wrap;
+  background-color: #f9f9f9; /* Optional: Adds a background color */
+  height: 300px; /* Use max-height instead of fixed height */
+  max-height: 300px; /* Use max-height instead of fixed height */
+  border: 1px solid #ddd; /* Optional */
+  padding: 5px;
+  overflow-y: scroll;
+}

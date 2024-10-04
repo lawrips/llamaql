@@ -113,6 +113,7 @@ export const useQueryState = (appName) => {
                     setChatResult(queryData.chat);
                     const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
                     setTranslatedResult(translatedData.data);
+                    console.log(translatedData.data);
                 }
                 else {
                     console.error('Error during query:', queryData.error);
@@ -129,7 +130,7 @@ export const useQueryState = (appName) => {
             }
 
             // now in the background get chart translation
-            console.log(queryData.data);
+            console.log('Now getting chart data');
             const translatedData = await translateChartResult(selectedModel, appName, queryData.data);
             setChartData(translatedData.data);
             makeChart(translatedData.data);
@@ -140,17 +141,24 @@ export const useQueryState = (appName) => {
     const handleDirectQuery = async () => {
         setLoading(true);
         setTranslatedResult('');
+        setUserChat('');
         setChatResult('');
         try {
             const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
             console.log(queryData)
             if (!queryData.error) {
                 setDbQuery(queryData.query);
+                setDbResult(queryData.data);
+                setChatResult(queryData.chat);
                 const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
                 setTranslatedResult(translatedData.data);
+                console.log(translatedData.data);
             }
             else {
-                console.error('Error during direct query:', queryData.error);
+                console.error('Error during query:', queryData.error);
+                setDbQuery(queryData.query);
+                setChatResult(queryData.chat);
+                setDbResult(queryData.data);
                 setTranslatedResult(queryData.error);
             }
         } catch (error) {
@@ -211,13 +219,11 @@ export const useQueryState = (appName) => {
 
 
     const makeChart = (data) => {
-        console.log(data)
         const extractCode = (text) => {
             const regex = /```(?:javascript|json|js)\s*([\s\S]*?)\s*```/;
             const match = text.match(regex);
             return match ? match[1].trim() : null;
         };
-        console.log(extractCode(data))
         let _chartData = JSON.parse(extractCode(data));
         if (_chartData) {
 
@@ -314,31 +320,36 @@ export const useQueryState = (appName) => {
     };
 
     const handleChat = async () => {
-        setLoading(true);
         console.log('dbQuery')
         console.log(dbQuery);
         console.log('dbResult')
         console.log(dbResult);
         console.log(userChat)
-        try {
+        if (dbResult) {
+            try {
+                let _userChat = userChat;
+                setUserChat('');
+                setLoading(true);
 
-            const res = await fetch(`/api/protected/app/${appName}/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userQuery: `${userQuery} (${annotation})`, schema: `${dataSchema}\n${dataExplanation}`, dbQuery: dbQuery, dbResult: dbResult, userChat: userChat, instructions: queryInstructions }),
-            });
-            let queryData = await res.json();
 
-            console.log(queryData)
-            setDbQuery(queryData.query);
-            setDbResult(queryData.data);
-            setChatResult(queryData.chat);
-            const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
-            setTranslatedResult(translatedData.data);
-        } catch (ex) {
-            console.log(ex)
-        } finally {
-            setLoading(false);
+                const res = await fetch(`/api/protected/app/${appName}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userQuery: `${userQuery} (${annotation})`, schema: `${dataSchema}\n${dataExplanation}`, dbQuery: dbQuery, dbResult: dbResult, userChat: _userChat, chatResult: chatResult }),
+                });
+                let queryData = await res.json();
+
+                console.log(queryData)
+
+                setChatResult(queryData.chat);
+                //            const translatedData = await translateQueryResult(selectedModel, appName, userChat, annotation, queryData.chat, dataInstructions);
+                //setTranslatedResult(translatedData.data);
+                setTranslatedResult(queryData.chat);
+            } catch (ex) {
+                console.log(ex)
+            } finally {
+                setLoading(false);
+            }
         }
 
     };
@@ -546,6 +557,7 @@ export const useQueryState = (appName) => {
         setShowDropdown,
         handleOptionSelect,
         handleDeleteOption,
+        focusedInput,
         setFocusedInput,
         getInputStyle,
         handleKeyDown,

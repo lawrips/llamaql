@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Rag from '@/lib/rag/sqlite3/rag';
 const utils = require('@/lib/utils/shareUtils');
+const schemaUtils = require('@/lib/utils/schemaUtils');
+const instructions = require('@/lib/constants/instructions');
 const conversations = require('@/lib/utils/converastionsUtils');
 
 export async function POST(request, { params }) {
@@ -13,7 +15,6 @@ export async function POST(request, { params }) {
   let schema = body.schema;
   let dbQuery = body.dbQuery;
   let dbResult = body.dbResult;
-  let chatResult = body.chatResult;
   let instructions = body.instructions;
 
 
@@ -25,19 +26,20 @@ export async function POST(request, { params }) {
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
   // add this conversation to the history
+  conversations.insert(dbName, session.user.email, dbQuery, dbResult, userChat );
   let history = conversations.getAll(dbName, session.user.email);
 
   const rag = new Rag(email, dbName);
   
-  let result = await rag.chat(userQuery, userChat, dbResult, history, null, null);
+  let result = await rag.chat(userQuery, history, instructions, schema);
   //console.log(result)
 
   if (result.error == null) {
-    conversations.add(dbName, session.user.email, dbQuery, dbResult, userChat, result.chat);
-
     return new Response(
       JSON.stringify(
         {
+          query: result.query,
+          data: result.data,
           chat: result.chat
         }), {
       status: 200,
@@ -45,6 +47,7 @@ export async function POST(request, { params }) {
     });
   } else {
     console.log(result.error);
+    console.log(result.query);
     return new Response(JSON.stringify({ query: JSON.stringify(result.query), chat: result.chat, error: JSON.stringify(result.error.toString()) }),
       {
         status: 400,

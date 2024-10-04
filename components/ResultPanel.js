@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -34,7 +38,7 @@ const colors = [
 ];
 
 
-const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn, chartKeys, userChat, setUserChat, handleChartClicked }) => {
+const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handleChartClicked }) => {
   const [chartType, setChartType] = useState('BarChart');
 
   let ChartComponent;
@@ -60,7 +64,6 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
       ChartComponent = LineChart;
   }
 
-
   return (
     <div>
       <Tabs>
@@ -69,25 +72,7 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
           <Tab>Chart</Tab>
         </TabList>
         <TabPanel>
-          <textarea
-            value={translatedResult}
-            rows={10}
-            placeholder="Your Results Will Appear Here"
-            style={{ width: '100%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
-          />
-          <div className="relative">
-            <input
-              className="w-full p-2 border rounded"
-              value={userChat}
-              autoComplete="off"
-              id="customField22"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-              onKeyDown={handleChatReturn}
-              type="text"
-              placeholder="Ask follow questions here"
-              onChange={(e) => setUserChat(e.target.value)}
-            />
-          </div>
+            <Markdown className="markdown-content" remarkPlugins={[remarkGfm]} >{translatedResult}</Markdown>
         </TabPanel>
         <TabPanel>
           <div>
@@ -128,7 +113,7 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                     allowDataOverflow={true}
                     yAxisId="left"
                     ticks={chartTicks.ticks || []}
-                    domain={[chartTicks.niceMin,chartTicks.niceMax]} />
+                    domain={[chartTicks.niceMin, chartTicks.niceMax]} />
                   {<YAxis
                     allowDataOverflow={true}
                     yAxisId="right"
@@ -163,7 +148,7 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, handleChatReturn
                         return null;
                     }
                   })
-                    }
+                  }
                 </ChartComponent>
               ) : (
                 // Special handling for RadarChart

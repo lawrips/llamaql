@@ -43,9 +43,9 @@ export async function POST(request, {params}) {
     
   }
 
-  const result = await rag.translate(body.query, instructions, body.input, model);
+  let result = await rag.translate(body.query, instructions, body.input, model);
 
-  return new Response(
+    return new Response(
     JSON.stringify(
       {
         data: `${result}`,

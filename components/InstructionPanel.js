@@ -3,6 +3,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
+import { Play } from "lucide-react";
+
 
 const InstructionPanel = ({
   dbQuery,
@@ -62,9 +64,10 @@ const InstructionPanel = ({
                   placeholder="SQL Query Will Appear Here"
                   onChange={(e) => setDbQuery(e.target.value)}
                   rows={8}
-                  style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
+                  style={{   border: '1px solid #ddd', padding: '5px', width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
                 />&nbsp;&nbsp;
-                <button onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>Run</button>
+                <button className="flex items-center" onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>
+                <Play className="h-4 w-4" />&nbsp;Execute</button>
               </div>
             </TabPanel>
             <TabPanel>

@@ -13,6 +13,8 @@ import ActionButtons from '../components/ActionButtons';
 import LoadingOverlay from '../components/LoadingOverlay';
 import ModalDialog from '@/components/ModalDialog';
 import TermsModal from '@/components/TermsModal';
+import { Search, Stars } from "lucide-react";
+
 
 export default function HomeClient({ appName }) {
     const {
@@ -41,7 +43,7 @@ export default function HomeClient({ appName }) {
         handleChat,
         handleChatReturn,
         handleSaveData,
-        handleExportJsonl,        
+        handleExportJsonl,
         handleImportJsonl,
         fileInputRef,
         handleFileChange,
@@ -63,6 +65,7 @@ export default function HomeClient({ appName }) {
         handleInstructSubChange,
         showDropdown,
         setShowDropdown,
+        focusedInput,
         setFocusedInput,
         getInputStyle,
         handleKeyDown,
@@ -100,6 +103,7 @@ export default function HomeClient({ appName }) {
                     setShowDropdown={setShowDropdown}
                     handleOptionSelect={handleOptionSelect}
                     handleDeleteOption={handleDeleteOption}
+                    focusedInput={focusedInput}
                     setFocusedInput={setFocusedInput}
                     getInputStyle={getInputStyle}
                     handleKeyDown={handleKeyDown}
@@ -109,8 +113,11 @@ export default function HomeClient({ appName }) {
                 <AnnotationInput
                     annotation={annotation}
                     setAnnotation={setAnnotation}
+                    focusedInput={focusedInput}
                     setFocusedInput={setFocusedInput}
                     getInputStyle={getInputStyle}
+                    handleKeyDown={handleKeyDown}
+
                 />
             </div>
             <div className="flex w-full pb-4 pr-4">
@@ -129,7 +136,12 @@ export default function HomeClient({ appName }) {
                         }}
                             onMouseEnter={() => setVisibleTooltipIndex(0)}
                             onMouseLeave={() => setVisibleTooltipIndex()}
-                        >Run Query</button>
+                            className="flex items-center"
+
+                        >
+                            <Search className="mr-2 h-4 w-4" />
+                            Query (fast)
+                        </button>
                         {visibleTooltipIndex === 0 && (
                             <div className="tooltip">
                                 {tooltips[0]}
@@ -144,7 +156,12 @@ export default function HomeClient({ appName }) {
                         }}
                             onMouseEnter={() => setVisibleTooltipIndex(1)}
                             onMouseLeave={() => setVisibleTooltipIndex()}
-                        >Generate Query</button>
+                            className="flex items-center"
+
+                        >
+                            <Stars className="mr-2 h-4 w-4" />
+                            Deep Query (pro)
+                        </button>
                         {visibleTooltipIndex === 1 && (
                             <div className="tooltip">
                                 {tooltips[1]}
@@ -184,9 +201,6 @@ export default function HomeClient({ appName }) {
                 chartData={chartData}
                 chartTicks={chartTicks}
                 chartKeys={chartKeys}
-                userChat={userChat}
-                setUserChat={setUserChat}
-                handleChatReturn={handleChatReturn}
                 handleChartClicked={handleChartClicked}
             />
 
@@ -210,7 +224,11 @@ export default function HomeClient({ appName }) {
                 isCreateModalOpen={isCreateModalOpen}
                 isDeleteModalOpen={isDeleteModalOpen}
                 createTableCount={createTableCount}
-                
+                // user chat
+                setUserChat={setUserChat}
+                handleChatReturn={handleChatReturn}
+                getInputStyle={getInputStyle}
+
             />
             <br />
             By using this prototype preview, you agree to the <a target="_blank" href="/terms.html">Terms and Conditions</a>.

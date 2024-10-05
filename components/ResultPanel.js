@@ -114,7 +114,7 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
                     yAxisId="left"
                     ticks={chartTicks.ticks || []}
                     domain={[chartTicks.niceMin, chartTicks.niceMax]} />
-                  {<YAxis
+                  {/*<YAxis
                     allowDataOverflow={true}
                     yAxisId="right"
                     orientation="right"
@@ -124,7 +124,7 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
                       fill: '#999', // Customize the appearance if necessary
                       fontSize: 12
                     }}
-                  />}
+                  />*/}
                   <Tooltip />
                   <Legend
                     wrapperStyle={{
@@ -134,7 +134,8 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
                   {/* Conditionally render data components based on chart type */}
                   {chartKeys.map((key, index) => {
                     const color = colors[index % colors.length];
-                    const yAxisId = index % 2 === 0 ? 'left' : 'right';
+                    //const yAxisId = index % 2 === 0 ? 'left' : 'right';
+                    const yAxisId = "left";
                     switch (chartType) {
                       case 'BarChart':
                         return <Bar yAxisId={yAxisId} key={key} dataKey={key} fill={color} />;

@@ -9,7 +9,6 @@ export const useQueryState = (appName) => {
     const [annotation, setAnnotation] = useState('');
     const [dbQuery, setDbQuery] = useState('');
     const [dbResult, setDbResult] = useState('');
-    const [chatResult, setChatResult] = useState('');
     const [translatedResult, setTranslatedResult] = useState('');
     const [chartData, setChartData] = useState([]);
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
@@ -95,7 +94,6 @@ export const useQueryState = (appName) => {
             setLoading(true);
             setTranslatedResult('');
             setUserChat('');
-            setChatResult('');
             let queryData;
             try {
                 let _instructions = requery ? requeryInstructions : queryInstructions;
@@ -110,31 +108,36 @@ export const useQueryState = (appName) => {
                 if (!queryData.error) {
                     setDbQuery(queryData.query);
                     setDbResult(queryData.data);
-                    setChatResult(queryData.chat);
-                    const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
-                    setTranslatedResult(translatedData.data);
-                    console.log(translatedData.data);
+                    //setTranslatedResult(queryData.chat);
+                    console.log('about to start streaming!')
+
+                    // Function to handle incoming data chunks
+                    const handleDataChunk = (chunk) => {
+                        setLoading(false);
+                        console.log('Streaming status:', chunk);
+                        setTranslatedResult((prevResult) => prevResult + chunk);
+                    };
+
+                    // Start the translation process
+                    translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
+                        .then((translatedResult) => {
+                            console.log("Translation completed.", translatedResult);
+                        })
+                        .catch((error) => {
+                            console.error("Error during translation:", error);
+                        })
+
                 }
                 else {
                     console.error('Error during query:', queryData.error);
                     setDbQuery(queryData.query);
-                    setChatResult(queryData.chat);
                     setDbResult(queryData.data);
                     setTranslatedResult(queryData.error);
                 }
             } catch (error) {
                 console.error('Error during query:', error);
                 setTranslatedResult(error);
-            } finally {
-                setLoading(false);
             }
-
-            // now in the background get chart translation
-            console.log('Now getting chart data');
-            const translatedData = await translateChartResult(selectedModel, appName, queryData.data);
-            setChartData(translatedData.data);
-            makeChart(translatedData.data);
-
         }
     };
 
@@ -142,25 +145,40 @@ export const useQueryState = (appName) => {
         setLoading(true);
         setTranslatedResult('');
         setUserChat('');
-        setChatResult('');
         try {
             const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
             console.log(queryData)
             if (!queryData.error) {
                 setDbQuery(queryData.query);
                 setDbResult(queryData.data);
-                setChatResult(queryData.chat);
-                const translatedData = await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions);
-                setTranslatedResult(translatedData.data);
-                console.log(translatedData.data);
+
+                console.log('about to start streaming!')
+
+                // Function to handle incoming data chunks
+                const handleDataChunk = (chunk) => {
+                    setLoading(false);
+                    console.log('Streaming status:', chunk);
+                    setTranslatedResult((prevResult) => prevResult + chunk);
+                };
+
+                // Start the translation process
+                translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
+                    .then((translatedResult) => {
+                        console.log("Translation completed.", translatedResult);
+                    })
+                    .catch((error) => {
+                        console.error("Error during translation:", error);
+                    })
+
             }
             else {
                 console.error('Error during query:', queryData.error);
                 setDbQuery(queryData.query);
-                setChatResult(queryData.chat);
                 setDbResult(queryData.data);
                 setTranslatedResult(queryData.error);
             }
+
+            
         } catch (error) {
             console.error('Exception during direct query:', error);
             setTranslatedResult(error);
@@ -320,40 +338,90 @@ export const useQueryState = (appName) => {
     };
 
     const handleChat = async () => {
-        console.log('dbQuery')
-        console.log(dbQuery);
-        console.log('dbResult')
-        console.log(dbResult);
-        console.log(userChat)
+        console.log('dbQuery', dbQuery);
+        console.log('dbResult', dbResult);
+        console.log('userChat', userChat);
+    
         if (dbResult) {
             try {
                 let _userChat = userChat;
                 setUserChat('');
                 setLoading(true);
-
-
+                setTranslatedResult(''); // Reset the translated result before starting a new chat
+                let _translatedResult = '';
+                // Step 1: Initiate chat job with a POST request
                 const res = await fetch(`/api/protected/app/${appName}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userQuery: `${userQuery} (${annotation})`, schema: `${dataSchema}\n${dataExplanation}`, dbQuery: dbQuery, dbResult: dbResult, userChat: _userChat, chatResult: chatResult }),
+                    body: JSON.stringify({
+                        userQuery: `${userQuery} (${annotation})`,
+                        schema: `${dataSchema}\n${dataExplanation}`,
+                        dbQuery: dbQuery,
+                        dbResult: dbResult,
+                        userChat: _userChat,
+                        chatResult: translatedResult
+                    }),
                 });
-                let queryData = await res.json();
-
-                console.log(queryData)
-
-                setChatResult(queryData.chat);
-                //            const translatedData = await translateQueryResult(selectedModel, appName, userChat, annotation, queryData.chat, dataInstructions);
-                //setTranslatedResult(translatedData.data);
-                setTranslatedResult(queryData.chat);
+    
+                if (!res.ok) {
+                    throw new Error('Failed to initiate chat');
+                }
+    
+                // Parse the response to get the jobId
+                const { jobId } = await res.json();
+    
+                // Step 2: Set up SSE to listen for the chat result
+                const eventSource = new EventSource(`/api/protected/app/${appName}/chat?jobId=${jobId}`);
+    
+                // Function to handle incoming data chunks
+                const handleDataChunk = (chunk) => {
+                    console.log('Streaming status:', chunk);
+                    _translatedResult += chunk;
+                    setTranslatedResult((prevResult) => prevResult + chunk);
+                };
+    
+                // Event listener for receiving messages
+                eventSource.onmessage = (event) => {
+                    try {
+                        const parsedData = JSON.parse(event.data);
+    
+                        if (parsedData.status === 'completed') {
+                            console.log('Chat completed.');
+                            eventSource.close();
+                            console.log('_userChat:', _userChat)
+                            if (_userChat == '/chart') {
+                                console.log('making chart:', _translatedResult)
+                                setChartData(_translatedResult);
+                                makeChart(_translatedResult);                    
+                            }
+                        } else if (parsedData.status === 'failed') {
+                            console.error('Chat failed:', parsedData.error);
+                            setTranslatedResult(`Error: ${parsedData.error}`);
+                            eventSource.close();
+                        } else if (parsedData.chunk) {
+                            // Handle each streaming chunk of data
+                            handleDataChunk(parsedData.chunk);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing streaming data:', error);
+                    }
+                };
+    
+                // Event listener for errors
+                eventSource.onerror = (error) => {
+                    console.error('EventSource error:', error);
+                    eventSource.close();
+                    setTranslatedResult('An error occurred during the streaming process.');
+                };
             } catch (ex) {
-                console.log(ex)
+                console.error('Error during chat request:', ex);
+                setTranslatedResult(`Error: ${ex.message}`);
             } finally {
                 setLoading(false);
             }
         }
-
     };
-
+    
     const handleSaveData = async () => {
         await fetch(`/api/protected/app/${appName}/save-data`, {
             method: 'POST',
@@ -449,6 +517,7 @@ export const useQueryState = (appName) => {
                 }
             } catch (error) {
                 console.error('Exception during direct query:', error);
+
                 setTranslatedResult(error);
             } finally {
                 setLoading(false);
@@ -519,8 +588,6 @@ export const useQueryState = (appName) => {
         setAnnotation,
         dbQuery,
         setDbQuery,
-        chatResult,
-        setChatResult,
         translatedResult,
         chartData,
         chartTicks,

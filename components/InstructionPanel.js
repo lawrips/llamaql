@@ -16,8 +16,6 @@ const InstructionPanel = ({
   dataInstructions,
   setDataInstructions,
   dataExamples,
-  chatResult,
-  setChatResult,
   dataExplanation,
   setDataExplanation,
   instructSubs,
@@ -39,7 +37,6 @@ const InstructionPanel = ({
         <div className="tab-container">
           <TabList>
             <Tab>Parsed Query</Tab>
-            <Tab>Raw Response</Tab>
             {(session.user?.role == 'admin') ?
               <>
                 <Tab>Query Instructions</Tab>
@@ -70,17 +67,6 @@ const InstructionPanel = ({
                 <Play className="h-4 w-4" />&nbsp;Execute</button>
               </div>
             </TabPanel>
-            <TabPanel>
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <textarea
-                  value={chatResult}
-                  placeholder="Messages will appear here"
-                  onChange={(e) => setChatResult(e.target.value)}
-                  rows={8}
-                  style={{ width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
-                />&nbsp;&nbsp;
-              </div>
-            </TabPanel>            
             {(session.user?.role == 'admin') ?
               <>
 

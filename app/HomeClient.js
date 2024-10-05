@@ -73,8 +73,6 @@ export default function HomeClient({ appName }) {
         handleDialogClose,
         handleSaveInstructions,
         shared,
-        chatResult,
-        setChatResult,
         handleCreateTable,
         handleDeleteTable,
         handleCancelTable,
@@ -192,8 +190,6 @@ export default function HomeClient({ appName }) {
                 handleInstructSubChange={handleInstructSubChange}
                 handleDirectQuery={handleDirectQuery}
                 handleSaveInstructions={handleSaveInstructions}
-                chatResult={chatResult}
-                setChatResult={setChatResult}
             />
 
             <ResultPanel

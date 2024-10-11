@@ -268,10 +268,11 @@ export const useQueryState = (appName) => {
                     setDbResult([...dbResults]);
                     setTranslatedResult([...translatedResults]);
                     setLoading(false);
-                } else {
+                }
+                // single query (no multi query) 
+                else {
                     // Function to handle incoming data chunks
                     const handleDataChunk = async (parsedData) => {
-                        console.log(parsedData);
                         if (parsedData.status === 'in-progress') {
                             const content = parsedData.content;
                             // Append the new content to accumulatedContent
@@ -306,7 +307,7 @@ export const useQueryState = (appName) => {
                             // Handle the data returned from the query execution
                             const queryData = JSON.parse(parsedData.content);
 
-                            console.log('queryData:')
+                            console.log('query-executed received. queryData:')
                             console.log(queryData)
                             if (!queryData.error) {
                                 setDbQuery(queryData.query);

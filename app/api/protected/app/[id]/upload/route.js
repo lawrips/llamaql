@@ -124,7 +124,7 @@ export async function POST(request, { params }) {
     createSetup(db);
 
     // create example queries
-    let schema = await createExamples(db, session.user.email, dbName, instructions );
+    let schema = await createExamples(db, session.user.email, dbName, instructions);
 
     // create explanation of data schema
     let explanation = await rag.createSchemaExplanation(instructions.schemaInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
@@ -223,15 +223,28 @@ const createDataTable = (db, tableName, parsedData) => {
   console.log('table created')
 };
 
+const normalizeLineBreaks = (data) => {
+  // Replace all types of line breaks with a standard '\n'
+  return data.replace(/\r\n|\r|\n/g, '\n');
+};
+
 const insertData = async (db, tableName, data) => {
+  const normalizedData = normalizeLineBreaks(data);
+
   const parsedData = await new Promise((resolve, reject) => {
-    Papa.parse(data, {
+    Papa.parse(normalizedData, {
       delimiter: guessDelimiter(data),
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false,
-      complete: (result) => resolve(result),
+      complete: (result) => {
+        if (result.errors.length) {
+          console.error('Parsing errors:', result.errors);
+        }
+        resolve(result);
+      },
       error: (error) => reject(error)
+
     });
   });
 

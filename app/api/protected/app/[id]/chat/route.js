@@ -44,6 +44,12 @@ export async function POST(request, { params }) {
   if (userChat == '/chart') {
     userChat = defaultInstructions.chartInstructions;
   }
+  else if (dbResult.length == 1) {
+    instructions = defaultInstructions.chatInstructions;
+  }
+  else if (dbResult.length > 1) {
+    instructions = defaultInstructions.multiChatInstructions;
+  }
 
   // Start the chat asynchronously with streaming
   (async () => {

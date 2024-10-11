@@ -81,7 +81,13 @@ export default function HomeClient({ appName }) {
         isCreateModalOpen,
         isDeleteModalOpen,
         createTableCount,
-        handleChartClicked
+        handleChartClicked,
+        handleCheckboxChange,
+        checkedOptions,
+        handleAddQuery,
+        handleRemoveQuery,
+        addedQueries,
+        queryButtonText
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
     const [visibleTooltipIndex, setVisibleTooltipIndex] = useState(null);
@@ -106,6 +112,11 @@ export default function HomeClient({ appName }) {
                     getInputStyle={getInputStyle}
                     handleKeyDown={handleKeyDown}
                     shared={shared}
+                    handleCheckboxChange={handleCheckboxChange}
+                    checkedOptions={checkedOptions}
+                    handleAddQuery={handleAddQuery}
+                    handleRemoveQuery={handleRemoveQuery}
+                    addedQueries={addedQueries}
                 />
                 &nbsp;&nbsp;
                 <AnnotationInput
@@ -138,7 +149,7 @@ export default function HomeClient({ appName }) {
 
                         >
                             <Search className="mr-2 h-4 w-4" />
-                            Query (fast)
+                            {queryButtonText} (fast)
                         </button>
                         {visibleTooltipIndex === 0 && (
                             <div className="tooltip">
@@ -158,7 +169,7 @@ export default function HomeClient({ appName }) {
 
                         >
                             <Stars className="mr-2 h-4 w-4" />
-                            Deep Query (pro)
+                            Deep {queryButtonText} (pro)
                         </button>
                         {visibleTooltipIndex === 1 && (
                             <div className="tooltip">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult, translateChartResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 import { generateNiceTicks } from '../lib/utils/graphUtils';
@@ -8,7 +8,7 @@ export const useQueryState = (appName) => {
     const [userChat, setUserChat] = useState('');
     const [annotation, setAnnotation] = useState('');
     const [dbQuery, setDbQuery] = useState('');
-    const [dbResult, setDbResult] = useState('');
+    const [dbResult, setDbResult] = useState([]);
     const [translatedResult, setTranslatedResult] = useState('');
     const [chartData, setChartData] = useState([]);
     const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
@@ -34,6 +34,10 @@ export const useQueryState = (appName) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);  // State to control modal visibility
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);  // State to control modal visibility
     const fileInputRef = useRef(null);
+    const [checkedOptions, setCheckedOptions] = useState({});
+    const [addedQueries, setAddedQueries] = useState([]);
+    const [queryButtonText, setQueryButtonText] = useState('Query');
+    const [addedQueriesData, setAddedQueriesData] = useState([]);
     const router = useRouter();
 
 
@@ -89,9 +93,36 @@ export const useQueryState = (appName) => {
         }
     };
 
+    const handleCheckboxChange = (option) => {
+        setCheckedOptions((prevState) => ({
+            ...prevState,
+            [option]: !prevState[option], // Toggle the checkbox state
+        }));
+    };
+
+
+    const handleAddQuery = () => {
+        if (userQuery.trim() !== '') {
+            setAddedQueries([...addedQueries, { query: userQuery.trim(), annotation: annotation.trim() }]);
+            setUserQuery('');
+            setQueryButtonText('Multi-Query');
+            console.log('addedQueries:', addedQueries)
+        }
+    };
+
+    const handleRemoveQuery = (index) => {
+        const newQueries = addedQueries.filter((_, i) => i !== index);
+        setAddedQueries(newQueries);
+        if (newQueries.length == 0) {
+            setQueryButtonText('Query');
+        }
+    };
+
     const handleQuery = async (requery) => {
-        if (userQuery) {
+        if (userQuery || addedQueries.length > 0) {
             setLoading(true);
+            setDbQuery('');
+            setDbResult([]);
             setTranslatedResult('');
             setUserChat('');
             let queryData;
@@ -102,40 +133,95 @@ export const useQueryState = (appName) => {
                         _instructions = _instructions.replace("{" + item + "}", "")
                     }
                 });
-                queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
-                console.log('queryData:')
-                console.log(queryData)
-                if (!queryData.error) {
-                    setDbQuery(queryData.query);
-                    setDbResult(queryData.data);
-                    //setTranslatedResult(queryData.chat);
-                    console.log('about to start streaming!')
 
-                    // Function to handle incoming data chunks
-                    const handleDataChunk = (chunk) => {
+                if (addedQueries.length > 0) {
+                    console.log('here22!!!');
+
+                    const promises = addedQueries.map((query, i) => {
+                        console.log('here!!!');
+                        console.log('here!!!');
+                        console.log('here!!!');
+                        console.log('sending: ', addedQueries[i].query)
+                        return executeNLQuery(selectedModel, appName, addedQueries[i].query, addedQueries[i].annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
+                    });
+
+                    // Wait for all Promises to resolve
+                    let _addedQueriesData = await Promise.all(promises);
+                    setAddedQueriesData(_addedQueriesData);
+                    console.log('addedQueries: ', addedQueries)
+                    console.log('addedqueriesdata: ', _addedQueriesData)
+
+                    if (addedQueries.every(i => i.error == null)) {
+                        console.log('about to start streaming!')
+
+                        // Function to handle incoming data chunks
+                        const handleDataChunk = (chunk) => {
+                            // Check if there's no space between last character of previous chunk and first character of this chunk
+                            setTranslatedResult((prevResult) => prevResult + chunk);
+                        };
+
+                        // Start the translation process
+                        for (let i = 0; i < addedQueries.length; i++) {
+                            console.log('executing: ', addedQueries[i]);
+                            console.log('with data: ', _addedQueriesData[i]);
+                            await translateQueryResult(selectedModel, appName, addedQueries[i].query, addedQueries[i].annotation, _addedQueriesData[i].data, dataInstructions, handleDataChunk)
+                                .then((translatedResult) => {
+                                    console.log("Translation completed.", translatedResult);
+                                })
+                                .catch((error) => {
+                                    console.error("Error during translation:", error);
+                                })
+
+                        }
+                    }
+                    else {
+                        console.error('Error during query:');
+                        setTranslatedResult(JSON.stringify(addedQueries.filter(i => i.error)));
                         setLoading(false);
-                        console.log('Streaming status:', chunk);
-                        setTranslatedResult((prevResult) => prevResult + chunk);
-                    };
-
-                    // Start the translation process
-                    translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
-                        .then((translatedResult) => {
-                            console.log("Translation completed.", translatedResult);
-                        })
-                        .catch((error) => {
-                            console.error("Error during translation:", error);
-                        })
-
+                    }
                 }
+
+
                 else {
-                    console.error('Error during query:', queryData.error);
-                    setDbQuery(queryData.query);
-                    setDbResult(queryData.data);
-                    setTranslatedResult(queryData.error);
+                    queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
+                    console.log('queryData:')
+                    console.log(queryData)
+                    if (!queryData.error) {
+                        setDbQuery(queryData.query);
+                        setDbResult(queryData.data);
+                        //setTranslatedResult(queryData.chat);
+                        console.log('about to start streaming!')
+                        setLoading(false);
+
+
+                        // Function to handle incoming data chunks
+                        const handleDataChunk = (chunk) => {
+                            setLoading(false);
+                            setTranslatedResult((prevResult) => prevResult + chunk);
+                        };
+
+                        // Start the translation process
+                        await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
+                            .then((translatedResult) => {
+                                console.log("Translation completed.", translatedResult);
+                            })
+                            .catch((error) => {
+                                console.error("Error during translation:", error);
+                            })
+
+                    }
+                    else {
+                        console.error('Error during query:', queryData.error);
+                        setDbQuery(queryData.query);
+                        setDbResult(queryData.data);
+                        setTranslatedResult(queryData.error);
+                        setLoading(false);
+                    }
                 }
+
             } catch (error) {
                 console.error('Error during query:', error);
+                setLoading(false);
                 setTranslatedResult(error);
             }
         }
@@ -158,6 +244,7 @@ export const useQueryState = (appName) => {
                 const handleDataChunk = (chunk) => {
                     setLoading(false);
                     console.log('Streaming status:', chunk);
+                    //chunk = chunk.replace('\n', '  \n');
                     setTranslatedResult((prevResult) => prevResult + chunk);
                 };
 
@@ -178,7 +265,7 @@ export const useQueryState = (appName) => {
                 setTranslatedResult(queryData.error);
             }
 
-            
+
         } catch (error) {
             console.error('Exception during direct query:', error);
             setTranslatedResult(error);
@@ -319,13 +406,6 @@ export const useQueryState = (appName) => {
         setDialogOpen(true);
     };
 
-    const handleChatReturn = (e) => {
-        if (e.key === 'Enter') {
-            // Trigger the button click event
-            handleChat();
-        }
-    };
-
     const handleChartClicked = async () => {
         if (!chartData) {
             setLoading(true);
@@ -337,11 +417,18 @@ export const useQueryState = (appName) => {
         }
     };
 
+    const handleChatReturn = (e) => {
+        if (e.key === 'Enter') {
+            // Trigger the button click event
+            handleChat();
+        }
+    };
+
     const handleChat = async () => {
         console.log('dbQuery', dbQuery);
         console.log('dbResult', dbResult);
         console.log('userChat', userChat);
-    
+
         if (dbResult) {
             try {
                 let _userChat = userChat;
@@ -350,41 +437,42 @@ export const useQueryState = (appName) => {
                 setTranslatedResult(''); // Reset the translated result before starting a new chat
                 let _translatedResult = '';
                 // Step 1: Initiate chat job with a POST request
+                console.log(addedQueries)
                 const res = await fetch(`/api/protected/app/${appName}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userQuery: `${userQuery} (${annotation})`,
+                        userQuery: addedQueries.length > 0 ? JSON.stringify(addedQueries) : `${userQuery} (${annotation})`,
                         schema: `${dataSchema}\n${dataExplanation}`,
                         dbQuery: dbQuery,
-                        dbResult: dbResult,
+                        dbResult: addedQueries.length > 0 ? addedQueriesData.map(i => i.data) : dbResult,
                         userChat: _userChat,
                         chatResult: translatedResult
                     }),
                 });
-    
+
                 if (!res.ok) {
                     throw new Error('Failed to initiate chat');
                 }
-    
+
                 // Parse the response to get the jobId
                 const { jobId } = await res.json();
-    
+
                 // Step 2: Set up SSE to listen for the chat result
                 const eventSource = new EventSource(`/api/protected/app/${appName}/chat?jobId=${jobId}`);
-    
+
                 // Function to handle incoming data chunks
                 const handleDataChunk = (chunk) => {
-                    console.log('Streaming status:', chunk);
+                    //console.log('Streaming status:', chunk);
                     _translatedResult += chunk;
                     setTranslatedResult((prevResult) => prevResult + chunk);
                 };
-    
+
                 // Event listener for receiving messages
                 eventSource.onmessage = (event) => {
                     try {
                         const parsedData = JSON.parse(event.data);
-    
+
                         if (parsedData.status === 'completed') {
                             console.log('Chat completed.');
                             eventSource.close();
@@ -392,7 +480,7 @@ export const useQueryState = (appName) => {
                             if (_userChat == '/chart') {
                                 console.log('making chart:', _translatedResult)
                                 setChartData(_translatedResult);
-                                makeChart(_translatedResult);                    
+                                makeChart(_translatedResult);
                             }
                         } else if (parsedData.status === 'failed') {
                             console.error('Chat failed:', parsedData.error);
@@ -406,9 +494,10 @@ export const useQueryState = (appName) => {
                         console.error('Error parsing streaming data:', error);
                     }
                 };
-    
+
                 // Event listener for errors
                 eventSource.onerror = (error) => {
+                    setLoading(false);
                     console.error('EventSource error:', error);
                     eventSource.close();
                     setTranslatedResult('An error occurred during the streaming process.');
@@ -421,7 +510,7 @@ export const useQueryState = (appName) => {
             }
         }
     };
-    
+
     const handleSaveData = async () => {
         await fetch(`/api/protected/app/${appName}/save-data`, {
             method: 'POST',
@@ -644,6 +733,12 @@ export const useQueryState = (appName) => {
         handleOpenCreateDialog,
         handleOpenDeleteDialog,
         createTableCount,
-        handleChartClicked
+        handleChartClicked,
+        handleCheckboxChange,
+        checkedOptions,
+        handleAddQuery,
+        handleRemoveQuery,
+        addedQueries,
+        queryButtonText
     };
 };

@@ -1,53 +1,70 @@
-import React, { useState } from 'react';
-import { X, Search, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Plus, Search, Trash2 } from 'lucide-react';
 
-const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, focusedInput, setFocusedInput, getInputStyle, handleKeyDown, shared }) => {
+const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, focusedInput, setFocusedInput, getInputStyle, handleKeyDown, shared, handleCheckboxChange, checkedOptions, addedQueries, handleAddQuery, handleRemoveQuery }) => {
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+                setFocusedInput(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [setShowDropdown, setFocusedInput]);
 
     return (
-
         <div style={getInputStyle('query')} className="relative">
-            <input
-                className="w-full p-2 border rounded"
-                style={{ width: '100%', boxSizing: 'border-box', paddingRight: '2.5rem' }}
-                value={userQuery}
-                type="text"
-                placeholder="Enter query here"
-                onChange={(e) => {
-                    setUserQuery(e.target.value);
-                    setShowDropdown(true);
-                }}
-                onFocus={() => {
-                    setShowDropdown(true);
-                    setFocusedInput('query');
-                }}
-                onBlur={() => {
-                    setTimeout(() => setShowDropdown(false), 200);
-                    setFocusedInput(null);
-                }}
-                onKeyDown={handleKeyDown}
-            />
-
-           {/* Conditional Rendering of Search or X Icon */}
-           {focusedInput === 'query' ? (
-                <X
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
-                    onMouseDown={(e) => {
-                        e.preventDefault(); // Prevents default mousedown behavior
-                        e.stopPropagation(); // Prevents event bubbling
+            <div className="relative">
+                <input
+                    className="w-full p-2 pr-16 border rounded"
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    value={userQuery}
+                    type="text"
+                    placeholder="Enter query here"
+                    onChange={(e) => {
+                        setUserQuery(e.target.value);
+                        setShowDropdown(true);
                     }}
-
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setUserQuery('');
+                    onFocus={() => {
+                        setShowDropdown(true);
+                        setFocusedInput('query');
                     }}
+                    onKeyDown={handleKeyDown}
                 />
-            ) : (
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-            )}
+                <div className="absolute right-0 top-0 h-full flex items-center pr-2">
+                    <Plus
+                        className="text-gray-400 cursor-pointer mr-2"
+                        size={20}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onClick={handleAddQuery}
+                    />
+                    <X
+                        className="text-gray-400 cursor-pointer"
+                        size={20}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setUserQuery('');
+                        }}
+                    />
+                </div>
+            </div>
 
             {showDropdown && (
-                <div className="absolute bg-white border rounded mt-1 w-full z-10 max-h-60 overflow-y-auto">
+                <div ref={dropdownRef} className="absolute bg-white border rounded mt-1 w-full z-10 max-h-60 overflow-y-auto">
                     {queryOptions
                         .filter(option =>
                             option.toLowerCase().includes(userQuery.toLowerCase())
@@ -56,8 +73,23 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                             <div
                                 className="relative flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                                 key={index}
-                                onMouseDown={(e) => handleOptionSelect(e, option)}
+                                onClick={(e) => {
+                                    if (e.target.type !== 'checkbox') {
+                                        handleOptionSelect(e, option);
+                                    }
+                                }}
                             >
+                                <div className="flex items-center mr-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!checkedOptions[option]}
+                                        className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out"
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            handleCheckboxChange(option);
+                                        }}
+                                    />
+                                </div>
                                 <span className="flex-grow">{option}</span>
                                 {!shared && (
                                     <Trash2
@@ -65,8 +97,8 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                                         size={24}
                                         className="text-gray-400 cursor-pointer"
                                         onMouseDown={(e) => {
-                                            e.preventDefault(); // Prevents default mousedown behavior
-                                            e.stopPropagation(); // Prevents event bubbling
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                         }}
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -79,6 +111,24 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                         ))}
                 </div>
             )}
+
+            {/* Added Queries Section */}
+            <div className="added-queries-section mt-4">
+                <h3 className="text-sm font-semibold mb-2">Added Queries:</h3>
+                <div className="max-h-40 overflow-y-auto">
+                    {addedQueries.map((query, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded mb-1 text-sm">
+                            <span className="flex-grow mr-2 truncate">{query.query}</span>
+                            <Trash2
+                                color="gray"
+                                size={18}
+                                className="text-gray-400 cursor-pointer hover:text-gray-600 flex-shrink-0"
+                                onClick={() => handleRemoveQuery(index)}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

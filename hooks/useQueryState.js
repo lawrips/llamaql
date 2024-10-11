@@ -38,14 +38,13 @@ export const useQueryState = (appName) => {
     const [addedQueries, setAddedQueries] = useState([]);
     const [queryButtonText, setQueryButtonText] = useState('Query');
     const [addedQueriesData, setAddedQueriesData] = useState([]);
+    const dbQueryTextAreaRef = useRef(null);
     const router = useRouter();
 
 
     useEffect(() => {
         const fetchInitialData = async () => {
             const data = await fetchInitialOptions(appName);
-            console.log("data:")
-            console.log(data)
             if (!data) {
                 router.push('/');
                 return null;
@@ -83,8 +82,15 @@ export const useQueryState = (appName) => {
             ]);
         };
 
+
         fetchInitialData();
     }, [appName]);
+
+    useEffect(() => {
+        if (dbQueryTextAreaRef.current) {
+            dbQueryTextAreaRef.current.scrollTop = dbQueryTextAreaRef.current.scrollHeight;
+        }
+    }, [dbQuery]);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -117,6 +123,8 @@ export const useQueryState = (appName) => {
             setQueryButtonText('Query');
         }
     };
+    let accumulatedContent = '';
+
 
     const handleQuery = async (requery) => {
         if (userQuery || addedQueries.length > 0) {
@@ -125,104 +133,250 @@ export const useQueryState = (appName) => {
             setDbResult([]);
             setTranslatedResult('');
             setUserChat('');
-            let queryData;
+
             try {
-                let _instructions = requery ? requeryInstructions : queryInstructions;
+                let _instructions = queryInstructions;
                 instructSubs.forEach((item) => {
                     if (!checkedItems.has(item)) {
-                        _instructions = _instructions.replace("{" + item + "}", "")
+                        _instructions = _instructions.replace("{" + item + "}", "");
                     }
                 });
 
                 if (addedQueries.length > 0) {
-                    console.log('here22!!!');
+                    // Initialize arrays to store results for each added query
+                    const dbQueries = [];
+                    const dbResults = [];
+                    const translatedResults = [];
 
-                    const promises = addedQueries.map((query, i) => {
-                        console.log('here!!!');
-                        console.log('here!!!');
-                        console.log('here!!!');
-                        console.log('sending: ', addedQueries[i].query)
-                        return executeNLQuery(selectedModel, appName, addedQueries[i].query, addedQueries[i].annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
-                    });
+                    for (let i = 0; i < addedQueries.length; i++) {
+                        const addedQuery = addedQueries[i];
+                        // Initialize accumulatedContent for each query
+                        let accumulatedContent = '';
 
-                    // Wait for all Promises to resolve
-                    let _addedQueriesData = await Promise.all(promises);
-                    setAddedQueriesData(_addedQueriesData);
-                    console.log('addedQueries: ', addedQueries)
-                    console.log('addedqueriesdata: ', _addedQueriesData)
+                        // Function to handle incoming data chunks for this query
+                        const handleDataChunk = async (parsedData) => {
+                            const { content, status } = parsedData;
 
-                    if (addedQueries.every(i => i.error == null)) {
-                        console.log('about to start streaming!')
+                            if (status === 'in-progress') {
+                                // Append the new content to accumulatedContent
+                                accumulatedContent += content;
 
-                        // Function to handle incoming data chunks
-                        const handleDataChunk = (chunk) => {
-                            // Check if there's no space between last character of previous chunk and first character of this chunk
-                            setTranslatedResult((prevResult) => prevResult + chunk);
+                                // Look for the SQL start marker
+                                const startMarker = '```sql';
+                                const endMarker = '```';
+
+                                const startIndex = accumulatedContent.indexOf(startMarker);
+                                if (startIndex !== -1) {
+                                    // Found the start marker
+                                    let sqlContentStart = startIndex + startMarker.length;
+
+                                    // Look for the end marker after the start marker
+                                    let endIndex = accumulatedContent.indexOf(endMarker, sqlContentStart);
+
+                                    let sqlContent;
+                                    if (endIndex !== -1) {
+                                        // Found the end marker
+                                        sqlContent = accumulatedContent.substring(sqlContentStart, endIndex).trim();
+
+                                        // Remove processed content from accumulatedContent
+                                        accumulatedContent = accumulatedContent.substring(endIndex + endMarker.length);
+                                    } else {
+                                        // End marker not found yet, extract till the end
+                                        sqlContent = accumulatedContent.substring(sqlContentStart).trim();
+                                    }
+
+                                    // Update dbQueries with the SQL content
+                                    dbQueries[i] = sqlContent;
+
+                                    // Optionally, update state to reflect progress
+                                    setDbQuery([...dbQueries]);
+                                }
+                                // If the start marker is not found, do nothing
+                            } else if (status === 'query-executed') {
+                                // Handle the data returned from the query execution
+                                const queryData = JSON.parse(content);
+
+                                console.log('queryData:', queryData);
+                                if (!queryData.error) {
+                                    dbQueries[i] = queryData.query;
+                                    dbResults[i] = queryData.data;
+
+                                    // Function to handle incoming data chunks for translation
+                                    const handleTranslationChunk = (chunk) => {
+                                        translatedResults[i] = (translatedResults[i] || '') + chunk;
+                                        // Optionally, update state to reflect progress
+                                        setTranslatedResult([...translatedResults]);
+                                    };
+
+                                    // Start the translation process
+                                    await translateQueryResult(
+                                        selectedModel,
+                                        appName,
+                                        addedQuery.query,
+                                        addedQuery.annotation,
+                                        queryData.data,
+                                        dataInstructions,
+                                        handleTranslationChunk
+                                    )
+                                        .then((translatedResult) => {
+                                            console.log("Translation completed.", translatedResult);
+                                        })
+                                        .catch((error) => {
+                                            console.error("Error during translation:", error);
+                                        });
+                                } else {
+                                    console.error('Error during query:', queryData.error);
+                                    dbQueries[i] = queryData.query;
+                                    dbResults[i] = queryData.data;
+                                    translatedResults[i] = queryData.error;
+
+                                    // Optionally, update state to reflect error
+                                    setDbQuery([...dbQueries]);
+                                    setDbResult([...dbResults]);
+                                    setTranslatedResult([...translatedResults]);
+                                    setLoading(false);
+                                }
+                            } else if (status === 'error') {
+                                console.error('Error during query:', content);
+                                translatedResults[i] = content;
+                                setTranslatedResult([...translatedResults]);
+                                setLoading(false);
+                            } else if (status === 'stream-completed') {
+                                // Finalize loading state if needed
+                                if (i === addedQueries.length - 1) {
+                                    setLoading(false);
+                                }
+                            }
                         };
 
-                        // Start the translation process
-                        for (let i = 0; i < addedQueries.length; i++) {
-                            console.log('executing: ', addedQueries[i]);
-                            console.log('with data: ', _addedQueriesData[i]);
-                            await translateQueryResult(selectedModel, appName, addedQueries[i].query, addedQueries[i].annotation, _addedQueriesData[i].data, dataInstructions, handleDataChunk)
-                                .then((translatedResult) => {
-                                    console.log("Translation completed.", translatedResult);
-                                })
-                                .catch((error) => {
-                                    console.error("Error during translation:", error);
-                                })
-
-                        }
+                        // Start the query and pass the handleDataChunk callback
+                        await executeNLQuery(
+                            selectedModel,
+                            appName,
+                            addedQuery.query,
+                            addedQuery.annotation,
+                            _instructions,
+                            dataSchema,
+                            dataExplanation,
+                            requery ? true : null,
+                            handleDataChunk
+                        );
                     }
-                    else {
-                        console.error('Error during query:');
-                        setTranslatedResult(JSON.stringify(addedQueries.filter(i => i.error)));
-                        setLoading(false);
-                    }
-                }
+
+                    // After processing all queries, update the state accordingly
+                    setDbQuery([...dbQueries]);
+                    setDbResult([...dbResults]);
+                    setTranslatedResult([...translatedResults]);
+                    setLoading(false);
+                } else {
+                    // Function to handle incoming data chunks
+                    const handleDataChunk = async (parsedData) => {
+                        console.log(parsedData);
+                        if (parsedData.status === 'in-progress') {
+                            const content = parsedData.content;
+                            // Append the new content to accumulatedContent
+                            accumulatedContent += content;
+
+                            // Look for the SQL start marker
+                            const startMarker = '```sql';
+                            const endMarker = '```';
+
+                            const startIndex = accumulatedContent.indexOf(startMarker);
+                            if (startIndex !== -1) {
+                                // Found the start marker
+                                let sqlContentStart = startIndex + startMarker.length;
+
+                                // Look for the end marker after the start marker
+                                let endIndex = accumulatedContent.indexOf(endMarker, sqlContentStart);
+
+                                let sqlContent;
+                                if (endIndex !== -1) {
+                                    // Found the end marker
+                                    sqlContent = accumulatedContent.substring(sqlContentStart, endIndex).trim();
+                                } else {
+                                    // End marker not found yet, extract till the end
+                                    sqlContent = accumulatedContent.substring(sqlContentStart).trim();
+                                }
+
+                                // Update setDbQuery with the SQL content
+                                setDbQuery(sqlContent);
+                            }
+                            // If the start marker is not found, do nothing
+                        } else if (parsedData.status === 'query-executed') {
+                            // Handle the data returned from the query execution
+                            const queryData = JSON.parse(parsedData.content);
+
+                            console.log('queryData:')
+                            console.log(queryData)
+                            if (!queryData.error) {
+                                setDbQuery(queryData.query);
+                                setDbResult(queryData.data);
+                                //setTranslatedResult(queryData.chat);
+                                console.log('about to start streaming!')
+                                setLoading(false);
 
 
-                else {
-                    queryData = await executeNLQuery(selectedModel, appName, userQuery, annotation, _instructions, dataSchema, dataExplanation, requery ? dbQuery : null);
-                    console.log('queryData:')
-                    console.log(queryData)
-                    if (!queryData.error) {
-                        setDbQuery(queryData.query);
-                        setDbResult(queryData.data);
-                        //setTranslatedResult(queryData.chat);
-                        console.log('about to start streaming!')
-                        setLoading(false);
+                                // Function to handle incoming data chunks
+                                const handleDataChunk = (chunk) => {
+                                    setLoading(false);
+                                    setTranslatedResult((prevResult) => prevResult + chunk);
+                                };
+
+                                // Start the translation process
+                                await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
+                                    .then((translatedResult) => {
+                                        console.log("Translation completed.", translatedResult);
+                                    })
+                                    .catch((error) => {
+                                        console.error("Error during translation:", error);
+                                    })
+
+                            }
+                            else {
+                                console.error('Error during query:', queryData.error);
+                                setDbQuery(queryData.query);
+                                setDbResult(queryData.data);
+                                setTranslatedResult(queryData.error);
+                                setLoading(false);
+                            }
 
 
-                        // Function to handle incoming data chunks
-                        const handleDataChunk = (chunk) => {
+                        } else if (parsedData.status === 'completed') {
                             setLoading(false);
-                            setTranslatedResult((prevResult) => prevResult + chunk);
-                        };
+                            if (parsedData.result) {
+                                const { query, data, error } = parsedData.result;
+                                setDbQuery(query);
+                                setDbResult(data);
+                                if (error) {
+                                    console.error('Error during query execution:', error);
+                                    setTranslatedResult(error.toString());
+                                }
+                            }
+                        } else if (parsedData.status === 'error') {
+                            console.error('Error during query:', parsedData.error);
+                            setTranslatedResult(parsedData.error);
+                            setLoading(false);
+                        }
+                    };
 
-                        // Start the translation process
-                        await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
-                            .then((translatedResult) => {
-                                console.log("Translation completed.", translatedResult);
-                            })
-                            .catch((error) => {
-                                console.error("Error during translation:", error);
-                            })
 
-                    }
-                    else {
-                        console.error('Error during query:', queryData.error);
-                        setDbQuery(queryData.query);
-                        setDbResult(queryData.data);
-                        setTranslatedResult(queryData.error);
-                        setLoading(false);
-                    }
+                    // Start the query and pass the handleDataChunk callback
+                    await executeNLQuery(
+                        selectedModel,
+                        appName,
+                        userQuery,
+                        annotation,
+                        _instructions,
+                        dataSchema,
+                        dataExplanation,
+                        requery ? true : null,
+                        handleDataChunk
+                    );
                 }
-
             } catch (error) {
                 console.error('Error during query:', error);
                 setLoading(false);
-                setTranslatedResult(error);
+                setTranslatedResult(error.toString());
             }
         }
     };
@@ -739,6 +893,7 @@ export const useQueryState = (appName) => {
         handleAddQuery,
         handleRemoveQuery,
         addedQueries,
-        queryButtonText
+        queryButtonText,
+        dbQueryTextAreaRef
     };
 };

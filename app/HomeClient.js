@@ -87,7 +87,8 @@ export default function HomeClient({ appName }) {
         handleAddQuery,
         handleRemoveQuery,
         addedQueries,
-        queryButtonText
+        queryButtonText,
+        dbQueryTextAreaRef
     } = useQueryState(appName);
     const { data: session } = useSession(); // Get session data
     const [visibleTooltipIndex, setVisibleTooltipIndex] = useState(null);
@@ -201,6 +202,7 @@ export default function HomeClient({ appName }) {
                 handleInstructSubChange={handleInstructSubChange}
                 handleDirectQuery={handleDirectQuery}
                 handleSaveInstructions={handleSaveInstructions}
+                dbQueryTextAreaRef={dbQueryTextAreaRef}
             />
 
             <ResultPanel

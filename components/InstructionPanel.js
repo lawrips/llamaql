@@ -22,7 +22,8 @@ const InstructionPanel = ({
   checkedItems,
   handleInstructSubChange,
   handleDirectQuery,
-  handleSaveInstructions
+  handleSaveInstructions,
+  dbQueryTextAreaRef
 }) => {
   const { data: session } = useSession(); // Get session data
   const [isOpen, setIsOpen] = useState(session.user.role == 'admin' ? true : false);
@@ -57,6 +58,7 @@ const InstructionPanel = ({
             <TabPanel>
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 <textarea
+                  ref={dbQueryTextAreaRef}
                   value={dbQuery}
                   placeholder="SQL Query Will Appear Here"
                   onChange={(e) => setDbQuery(e.target.value)}

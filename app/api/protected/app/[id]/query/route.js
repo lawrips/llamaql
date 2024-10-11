@@ -7,7 +7,7 @@ const conversations = require('@/lib/utils/converastionsUtils');
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
-  console.log("****** NEW QUERY REQUEST ******** ")
+  console.log("****** NEW QUERY REQUEST ******** ");
 
   const body = await request.json();
   let input = body.input;
@@ -19,36 +19,60 @@ export async function POST(request, { params }) {
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
 
-
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
   // reset message history
   conversations.deleteAll(dbName, session.user.email);
 
-
   const rag = new Rag(email, dbName);
 
-  let result = await rag.query(input, annotation, model, instructions, schema, generate || null);
-  console.log('nuber of rows in result: ' + result.data?.length)
+  const encoder = new TextEncoder();
 
-  if (result.error == null) {
-    return new Response(
-      JSON.stringify(
-        {
-          query: result.query,
-          data: result.data,
-          chat: result.chat
-        }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } else {
-    console.log(result.error);
-    console.log(result.query);
-    return new Response(JSON.stringify({ chat: result.chat, query: result.query, error: result.error.toString() }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      })
-  }
+  const stream = new ReadableStream({
+    async start(controller) {
+      let controllerClosed = false;
+
+      const onChunk = ({ content, status }) => {
+        if (controllerClosed) return;
+        const chunk = JSON.stringify({ content, status });
+        controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+
+        // Close the controller only when appropriate
+        if (status === 'stream-completed' || status === 'error') {
+          if (!controllerClosed) {
+            controller.close();
+            controllerClosed = true;
+          }
+        }
+      };
+
+      try {
+        await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, onChunk);
+
+        // If the 'completed' status is not sent within 'onChunk', send it here
+        if (!controllerClosed) {
+          const finalResultChunk = JSON.stringify({ status: 'stream-completed' });
+          controller.enqueue(encoder.encode(`data: ${finalResultChunk}\n\n`));
+          controller.close();
+          controllerClosed = true;
+        }
+      } catch (error) {
+        console.error(error);
+        const errorChunk = JSON.stringify({ error: error.toString(), status: 'error' });
+        controller.enqueue(encoder.encode(`data: ${errorChunk}\n\n`));
+        if (!controllerClosed) {
+          controller.close();
+          controllerClosed = true;
+        }
+      }
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive'
+    }
+  });
 }

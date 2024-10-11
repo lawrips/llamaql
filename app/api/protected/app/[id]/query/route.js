@@ -38,7 +38,7 @@ export async function POST(request, { params }) {
         controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
 
         // Close the controller only when appropriate
-        if (status === 'stream-completed' || status === 'error') {
+        if (status === 'query-executed' || status === 'error') {
           if (!controllerClosed) {
             controller.close();
             controllerClosed = true;
@@ -49,9 +49,9 @@ export async function POST(request, { params }) {
       try {
         await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, onChunk);
 
-        // If the 'completed' status is not sent within 'onChunk', send it here
+        // Only send this if rag.queryStreaming didn't send a 'query-executed' status
         if (!controllerClosed) {
-          const finalResultChunk = JSON.stringify({ status: 'stream-completed' });
+          const finalResultChunk = JSON.stringify({ status: 'query-executed', content: '' });
           controller.enqueue(encoder.encode(`data: ${finalResultChunk}\n\n`));
           controller.close();
           controllerClosed = true;

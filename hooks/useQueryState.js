@@ -11,6 +11,7 @@ import {
     handleQueryError,
     handleTranslation
 } from '../lib/utils/queryHelpers';
+import { executeChatQuery } from '../lib/utils/queryUtils';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
@@ -154,11 +155,12 @@ export const useQueryState = (appName) => {
                     dataExplanation, 
                     requery, 
                     (parsedData) => {
+                        //console.log('Received data in handleQuery:', parsedData); // Log received data
                         accumulatedContent = handleDataChunk(parsedData, accumulatedContent, setDbQuery);
                     }
                 );
 
-                console.log('results:', results);
+                console.log('Final results:', results);
                 
                 if (results && results.length > 0) {
                     if (addedQueries.length > 0) {
@@ -349,83 +351,40 @@ export const useQueryState = (appName) => {
     };
 
     const handleChat = async () => {
-        console.log('dbQuery', dbQuery);
-        console.log('dbResult', dbResult);
-        console.log('userChat', userChat);
-
         if (dbResult) {
             try {
                 let _userChat = userChat;
                 setUserChat('');
                 setLoading(true);
-                setTranslatedResult(''); // Reset the translated result before starting a new chat
+                setTranslatedResult('');
                 let _translatedResult = '';
-                // Step 1: Initiate chat job with a POST request
-                console.log(addedQueries)
-                const res = await fetch(`/api/protected/app/${appName}/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userQuery: addedQueries.length > 0 ? JSON.stringify(addedQueries) : `${userQuery} (${annotation})`,
-                        schema: `${dataSchema}\n${dataExplanation}`,
-                        dbQuery: dbQuery,
-                        dbResult: addedQueries.length > 0 ? addedQueriesData.map(i => i.data) : dbResult,
-                        userChat: _userChat,
-                        chatResult: translatedResult
-                    }),
+
+                const chatData = {
+                    userQuery: addedQueries.length > 0 ? JSON.stringify(addedQueries) : `${userQuery} (${annotation})`,
+                    schema: `${dataSchema}\n${dataExplanation}`,
+                    dbQuery: dbQuery,
+                    dbResult: addedQueries.length > 0 ? addedQueriesData.map(i => i.data) : dbResult,
+                    userChat: _userChat,
+                    chatResult: translatedResult
+                };
+
+                await executeChatQuery(appName, chatData, (parsedData) => {
+                    if (parsedData.status === 'completed') {
+                        console.log('Chat completed.');
+                        if (_userChat === '/chart') {
+                            console.log('making chart:', _translatedResult);
+                            setChartData(_translatedResult);
+                            makeChart(_translatedResult);
+                        }
+                    } else if (parsedData.status === 'failed') {
+                        console.error('Chat failed:', parsedData.error);
+                        setTranslatedResult(`Error: ${parsedData.error}`);
+                    } else if (parsedData.chunk) {
+                        _translatedResult += parsedData.chunk;
+                        setTranslatedResult((prevResult) => prevResult + parsedData.chunk);
+                    }
                 });
 
-                if (!res.ok) {
-                    throw new Error('Failed to initiate chat');
-                }
-
-                // Parse the response to get the jobId
-                const { jobId } = await res.json();
-
-                // Step 2: Set up SSE to listen for the chat result
-                const eventSource = new EventSource(`/api/protected/app/${appName}/chat?jobId=${jobId}`);
-
-                // Function to handle incoming data chunks
-                const handleDataChunk = (chunk) => {
-                    //console.log('Streaming status:', chunk);
-                    _translatedResult += chunk;
-                    setTranslatedResult((prevResult) => prevResult + chunk);
-                };
-
-                // Event listener for receiving messages
-                eventSource.onmessage = (event) => {
-                    try {
-                        const parsedData = JSON.parse(event.data);
-
-                        if (parsedData.status === 'completed') {
-                            console.log('Chat completed.');
-                            eventSource.close();
-                            console.log('_userChat:', _userChat)
-                            if (_userChat == '/chart') {
-                                console.log('making chart:', _translatedResult)
-                                setChartData(_translatedResult);
-                                makeChart(_translatedResult);
-                            }
-                        } else if (parsedData.status === 'failed') {
-                            console.error('Chat failed:', parsedData.error);
-                            setTranslatedResult(`Error: ${parsedData.error}`);
-                            eventSource.close();
-                        } else if (parsedData.chunk) {
-                            // Handle each streaming chunk of data
-                            handleDataChunk(parsedData.chunk);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing streaming data:', error);
-                    }
-                };
-
-                // Event listener for errors
-                eventSource.onerror = (error) => {
-                    setLoading(false);
-                    console.error('EventSource error:', error);
-                    eventSource.close();
-                    setTranslatedResult('An error occurred during the streaming process.');
-                };
             } catch (ex) {
                 console.error('Error during chat request:', ex);
                 setTranslatedResult(`Error: ${ex.message}`);

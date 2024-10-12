@@ -1,23 +1,14 @@
 import Rag from '@/lib/rag/sqlite3/rag';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { createStreamResponse } from '@/lib/utils/streamUtils';
 const utils = require('@/lib/utils/shareUtils');
-
-const defaultInstructions = require('@/lib/constants/instructions');
-
-import { v4 as uuidv4 } from 'uuid';
-import { Chilanka } from 'next/font/google';
-
-const jobs = {}; // In-memory storage for simplicity; replace with persistent storage as needed
-
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
   const body = await request.json();
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
-
-  const { query, annotation, input } = body;
   const { id } = params;
 
   console.log("****** NEW TRANSLATE REQUEST ********");
@@ -25,102 +16,13 @@ export async function POST(request, { params }) {
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
   const rag = new Rag(email, dbName);
 
-  let instructions = body.instructions;
-  if (!instructions) {
-    let setup = rag.getSetup();
-    if (type && type == 'chart') {
-      instructions = JSON.parse(setup.instructions).chartInstructions || defaultInstructions.chartInstructions;
-    }
-    else {
-      instructions = JSON.parse(setup.instructions).dataInstructions;
-    }
-
-  }
-
-  // Create a new jobId
-  const jobId = uuidv4();
-
-  // Store the job information
-  jobs[jobId] = { session, query, annotation, input, instructions, model, result: '', status: 'in-progress' };
-
-  // Start the translation asynchronously with streaming
-  (async () => {
+  return createStreamResponse(async (streamHandler, streamCallbacks) => {
     try {
-      await rag.translateStreaming(query, instructions, input, null, (chunk) => {
-        jobs[jobId].result += chunk.content; // Append each chunk to the result
-        jobs[jobId].status = chunk.status; // this will be set to in-progress while ongoing and completed when finished
-      });
+      await rag.translateStreaming(body.query, body.instructions, body.input, model, streamCallbacks);
+      streamCallbacks.onCompleted(); // Ensure we call onCompleted after translation is done
     } catch (error) {
-      jobs[jobId].status = 'failed: ' + error.message;
-    }
-  })();
-
-  // Respond with jobId
-  return new Response(
-    JSON.stringify({ jobId }),
-    {
-      status: 202,
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
-
-
-export async function GET(request, { params }) {
-  const { searchParams } = new URL(request.url);
-  const jobId = searchParams.get('jobId');
-
-
-  if (!jobs[jobId]) {
-    return new Response(
-      JSON.stringify({ error: 'Invalid job ID' }),
-      {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  }
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        // Stream data while the job is in-progress or already completed
-        while (jobs[jobId].status === 'in-progress' || jobs[jobId].status === 'completed') {
-          if (jobs[jobId].result) {
-            // Send all accumulated data and then clear it
-            controller.enqueue(`data: ${JSON.stringify({ chunk: jobs[jobId].result })}\n\n`);
-            jobs[jobId].result = ''; // Clear the result once sent
-          }
-
-          // If the job is completed, break the loop and send the final status
-          if (jobs[jobId].status === 'completed') {
-            controller.enqueue(`data: ${JSON.stringify({ status: 'completed' })}\n\n`);
-            break;
-          }
-
-          // Wait for a short interval before checking again (if still in-progress)
-          await new Promise(resolve => setTimeout(resolve, 100)); // 100ms polling interval
-        }
-
-        // If the job failed, send the failure status
-        if (jobs[jobId].status === 'failed') {
-          controller.enqueue(`data: ${JSON.stringify({ status: 'failed', error: 'Translation failed' })}\n\n`);
-        }
-
-        controller.close();
-      } catch (error) {
-        controller.enqueue(`data: {"error": "An error occurred during streaming"}\n\n`);
-        controller.close();
-      }
-    }
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
+      console.error("Error in translate streaming:", error);
+      streamCallbacks.onError(error.toString());
     }
   });
 }
-

@@ -281,3 +281,7 @@ button:active {
   padding: 5px;
   overflow-y: scroll;
 }
+
+.markdown-wrapper:focus-within {
+  outline: 2px solid #007bff; /* or any color you prefer */
+}

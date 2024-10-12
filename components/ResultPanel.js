@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
 
 import {
   ResponsiveContainer,
@@ -37,32 +36,44 @@ const colors = [
   '#795548', // Brown
 ];
 
-
 const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handleChartClicked }) => {
+  const markdownRef = useRef(null);
   const [chartType, setChartType] = useState('BarChart');
+  const [isMarkdownFocused, setIsMarkdownFocused] = useState(false);
 
-  let ChartComponent;
-  let chartSpecificProps = {};
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isMarkdownFocused && (e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const selection = window.getSelection();
+        const range = document.createRange();
+        
+        range.selectNodeContents(markdownRef.current);
+        
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    };
 
-  switch (chartType) {
-    case 'BarChart':
-      ChartComponent = BarChart;
-      break;
-    case 'LineChart':
-      ChartComponent = LineChart;
-      break;
-    case 'AreaChart':
-      ChartComponent = AreaChart;
-      break;
-    case 'StackedAreaChart':
-      ChartComponent = AreaChart;
-      break;
-    case 'RadarChart':
-      ChartComponent = RadarChart;
-      break;
-    default:
-      ChartComponent = LineChart;
-  }
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMarkdownFocused]);
+
+  const ChartComponent = {
+    BarChart: BarChart,
+    LineChart: LineChart,
+    AreaChart: AreaChart,
+    RadarChart: RadarChart,
+  }[chartType];
+
+  const chartSpecificProps = chartType === 'AreaChart' || chartType === 'StackedAreaChart'
+    ? { stackOffset: "expand" }
+    : {};
 
   return (
     <div>
@@ -72,20 +83,28 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
           <Tab>Chart</Tab>
         </TabList>
         <TabPanel>
-            <Markdown className="markdown-content" remarkPlugins={[remarkGfm]} >{translatedResult}</Markdown>
+          <div 
+            ref={markdownRef} 
+            className="markdown-wrapper" 
+            tabIndex="0"
+            onFocus={() => setIsMarkdownFocused(true)}
+            onBlur={() => setIsMarkdownFocused(false)}
+          >
+            <Markdown className="markdown-content" remarkPlugins={[remarkGfm]}>
+              {translatedResult}
+            </Markdown>
+          </div>
         </TabPanel>
         <TabPanel>
           <div>
             <div className="flex w-1/4 gap-4 p-4" style={{ minHeight: '50px' }}>
-
               <select value={chartType} onChange={(e) => setChartType(e.target.value)}>
                 <option value="BarChart">Bar Chart</option>
                 <option value="LineChart">Line Chart</option>
                 <option value="AreaChart">Area Chart</option>
-                <option value="StackedAreaChart">Stacked Area Chart</option> {/* Added this line */}
+                <option value="StackedAreaChart">Stacked Area Chart</option>
                 <option value="RadarChart">Radar Chart</option>
               </select>
-              <br />
             </div>
 
             <ResponsiveContainer width="100%" height={600}>
@@ -114,27 +133,14 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
                     yAxisId="left"
                     ticks={chartTicks.ticks || []}
                     domain={[chartTicks.niceMin, chartTicks.niceMax]} />
-                  {/*<YAxis
-                    allowDataOverflow={true}
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 100]} // You can adjust the domain for the right Y-axis
-                    tick={{
-                      color: colors[1],
-                      fill: '#999', // Customize the appearance if necessary
-                      fontSize: 12
-                    }}
-                  />*/}
                   <Tooltip />
                   <Legend
                     wrapperStyle={{
-                      position: 'relative', // Make sure the position is relative to apply the offset
+                      position: 'relative',
                     }} />
 
-                  {/* Conditionally render data components based on chart type */}
                   {chartKeys.map((key, index) => {
                     const color = colors[index % colors.length];
-                    //const yAxisId = index % 2 === 0 ? 'left' : 'right';
                     const yAxisId = "left";
                     switch (chartType) {
                       case 'BarChart':
@@ -142,17 +148,14 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
                       case 'LineChart':
                         return <Line yAxisId={yAxisId} key={key} type="monotone" dataKey={key} stroke={color} strokeWidth={2} />;
                       case 'AreaChart':
-                        return <Area key={key} type="monotone" dataKey={key} stroke={color} fill={color} />;
                       case 'StackedAreaChart':
                         return <Area key={key} type="monotone" dataKey={key} stackId="1" stroke={color} fill={color} />;
                       default:
                         return null;
                     }
-                  })
-                  }
+                  })}
                 </ChartComponent>
               ) : (
-                // Special handling for RadarChart
                 <RadarChart
                   data={chartData}
                   outerRadius={150}

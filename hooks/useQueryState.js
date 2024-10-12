@@ -1,7 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { fetchInitialOptions, executeDirectQuery, executeNLQuery, translateQueryResult, translateChartResult } from '../lib/utils/queryUtils';
+import { fetchInitialOptions, executeDirectQuery, translateChartResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 import { generateNiceTicks } from '../lib/utils/graphUtils';
+import { 
+    resetQueryState, 
+    getInstructions, 
+    executeQueries, 
+    handleMultipleQueries, 
+    handleDataChunk, 
+    handleQueryError,
+    handleTranslation
+} from '../lib/utils/queryHelpers';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
@@ -129,272 +138,61 @@ export const useQueryState = (appName) => {
     const handleQuery = async (requery) => {
         if (userQuery || addedQueries.length > 0) {
             setLoading(true);
-            setDbQuery('');
-            setDbResult([]);
-            setTranslatedResult('');
-            setUserChat('');
+            resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat);
 
             try {
-                let _instructions = queryInstructions;
-                instructSubs.forEach((item) => {
-                    if (!checkedItems.has(item)) {
-                        _instructions = _instructions.replace("{" + item + "}", "");
+                const _instructions = getInstructions(queryInstructions, instructSubs, checkedItems);
+                const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
+
+                let accumulatedContent = '';
+                const results = await executeQueries(
+                    queries, 
+                    selectedModel, 
+                    appName, 
+                    _instructions, 
+                    dataSchema, 
+                    dataExplanation, 
+                    requery, 
+                    (parsedData) => {
+                        accumulatedContent = handleDataChunk(parsedData, accumulatedContent, setDbQuery);
                     }
-                });
+                );
 
-                if (addedQueries.length > 0) {
-                    // Initialize arrays to store results for each added query
-                    const dbQueries = new Array(addedQueries.length).fill('');
-                    const dbResults = new Array(addedQueries.length).fill(null);
-                    let translatedResult = '';
-
-                    try {
-                        // Execute all queries first
-                        const queryPromises = addedQueries.map((addedQuery, index) => {
-                            return new Promise(async (resolve, reject) => {
-                                let accumulatedContent = '';
-
-                                const handleDataChunk = async (parsedData) => {
-                                    const { content, status } = parsedData;
-
-                                    if (status === 'in-progress') {
-                                        accumulatedContent += content;
-                                        const startMarker = '```sql';
-                                        const endMarker = '```';
-                                        const startIndex = accumulatedContent.indexOf(startMarker);
-                                        if (startIndex !== -1) {
-                                            let sqlContentStart = startIndex + startMarker.length;
-                                            let endIndex = accumulatedContent.indexOf(endMarker, sqlContentStart);
-                                            let sqlContent;
-                                            if (endIndex !== -1) {
-                                                sqlContent = accumulatedContent.substring(sqlContentStart, endIndex).trim();
-                                                accumulatedContent = accumulatedContent.substring(endIndex + endMarker.length);
-                                            } else {
-                                                sqlContent = accumulatedContent.substring(sqlContentStart).trim();
-                                            }
-                                            dbQueries[index] = sqlContent;
-                                            setDbQuery([...dbQueries]);
-                                        }
-                                    } else if (status === 'query-executed') {
-                                        const queryData = JSON.parse(content);
-                                        if (!queryData.error) {
-                                            dbQueries[index] = queryData.query;
-                                            dbResults[index] = queryData.data;
-                                            resolve(queryData);
-                                        } else {
-                                            console.error('Error during query:', queryData.error);
-                                            dbQueries[index] = queryData.query;
-                                            dbResults[index] = queryData.data;
-                                            reject(new Error(queryData.error));
-                                        }
-                                    } else if (status === 'error') {
-                                        console.error('Error during query:', content);
-                                        reject(new Error(content));
-                                    }
-                                };
-
-                                try {
-                                    await executeNLQuery(
-                                        selectedModel,
-                                        appName,
-                                        addedQuery.query,
-                                        addedQuery.annotation,
-                                        _instructions,
-                                        dataSchema,
-                                        dataExplanation,
-                                        requery ? true : null,
-                                        handleDataChunk
-                                    );
-                                } catch (error) {
-                                    reject(error);
-                                }
-                            });
-                        });
-
-                        // Wait for all queries to complete
-                        const queryResults = await Promise.all(queryPromises);
-
-                        // Now translate all results in a single call
-                        const handleTranslationChunk = (chunk) => {
-                            translatedResult += chunk;
-                            setTranslatedResult(translatedResult);
-                        };
-
-                        await translateQueryResult(
-                            selectedModel,
-                            appName,
-                            addedQueries.map(q => q.query),
-                            addedQueries.map(q => q.annotation),
-                            queryResults.map(r => r.data),
-                            dataInstructions,
-                            handleTranslationChunk
-                        );
-
-                        console.log("Translation completed for all queries");
-
-                    } catch (error) {
-                        console.error("An error occurred during query execution or translation:", error);
-                    } finally {
-                        setDbQuery([...dbQueries]);
-                        setDbResult([...dbResults]);
-                        setLoading(false);
+                console.log('results:', results);
+                
+                if (results && results.length > 0) {
+                    if (addedQueries.length > 0) {
+                        await handleMultipleQueries(results, addedQueries, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
+                    } else {
+                        await handleTranslation(results[0], userQuery, annotation, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
                     }
-                }
-                // single query (no multi query) 
-                else {
-                    // Function to handle incoming data chunks
-                    const handleDataChunk = async (parsedData) => {
-                        if (parsedData.status === 'in-progress') {
-                            const content = parsedData.content;
-                            // Append the new content to accumulatedContent
-                            accumulatedContent += content;
-
-                            // Look for the SQL start marker
-                            const startMarker = '```sql';
-                            const endMarker = '```';
-
-                            const startIndex = accumulatedContent.indexOf(startMarker);
-                            if (startIndex !== -1) {
-                                // Found the start marker
-                                let sqlContentStart = startIndex + startMarker.length;
-
-                                // Look for the end marker after the start marker
-                                let endIndex = accumulatedContent.indexOf(endMarker, sqlContentStart);
-
-                                let sqlContent;
-                                if (endIndex !== -1) {
-                                    // Found the end marker
-                                    sqlContent = accumulatedContent.substring(sqlContentStart, endIndex).trim();
-                                } else {
-                                    // End marker not found yet, extract till the end
-                                    sqlContent = accumulatedContent.substring(sqlContentStart).trim();
-                                }
-
-                                // Update setDbQuery with the SQL content
-                                setDbQuery(sqlContent);
-                            }
-                            // If the start marker is not found, do nothing
-                        } else if (parsedData.status === 'query-executed') {
-                            // Handle the data returned from the query execution
-                            const queryData = JSON.parse(parsedData.content);
-
-                            console.log('query-executed received. queryData:')
-                            console.log(queryData)
-                            if (!queryData.error) {
-                                setDbQuery(queryData.query);
-                                setDbResult(queryData.data);
-                                //setTranslatedResult(queryData.chat);
-                                console.log('about to start streaming!')
-                                setLoading(false);
-
-
-                                // Function to handle incoming data chunks
-                                const handleDataChunk = (chunk) => {
-                                    setLoading(false);
-                                    setTranslatedResult((prevResult) => prevResult + chunk);
-                                };
-
-                                // Start the translation process
-                                await translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
-                                    .then((translatedResult) => {
-                                        console.log("Translation completed.", translatedResult);
-                                    })
-                                    .catch((error) => {
-                                        console.error("Error during translation:", error);
-                                    })
-
-                            }
-                            else {
-                                console.error('Error during query:', queryData.error);
-                                setDbQuery(queryData.query);
-                                setDbResult(queryData.data);
-                                setTranslatedResult(queryData.error);
-                                setLoading(false);
-                            }
-
-
-                        } else if (parsedData.status === 'completed') {
-                            setLoading(false);
-                            if (parsedData.result) {
-                                const { query, data, error } = parsedData.result;
-                                setDbQuery(query);
-                                setDbResult(data);
-                                if (error) {
-                                    console.error('Error during query execution:', error);
-                                    setTranslatedResult(error.toString());
-                                }
-                            }
-                        } else if (parsedData.status === 'error') {
-                            console.error('Error during query:', parsedData.error);
-                            setTranslatedResult(parsedData.error);
-                            setLoading(false);
-                        }
-                    };
-
-
-                    // Start the query and pass the handleDataChunk callback
-                    await executeNLQuery(
-                        selectedModel,
-                        appName,
-                        userQuery,
-                        annotation,
-                        _instructions,
-                        dataSchema,
-                        dataExplanation,
-                        requery ? true : null,
-                        handleDataChunk
-                    );
+                } else {
+                    throw new Error('No results returned from query execution');
                 }
             } catch (error) {
-                console.error('Error during query:', error);
+                handleQueryError(error, setTranslatedResult);
+            } finally {
                 setLoading(false);
-                setTranslatedResult(error.toString());
             }
         }
     };
 
     const handleDirectQuery = async () => {
         setLoading(true);
-        setTranslatedResult('');
-        setUserChat('');
+        resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat);
+
         try {
             const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
-            console.log(queryData)
+            
             if (!queryData.error) {
-                setDbQuery(queryData.query);
-                setDbResult(queryData.data);
-
-                console.log('about to start streaming!')
-
-                // Function to handle incoming data chunks
-                const handleDataChunk = (chunk) => {
-                    setLoading(false);
-                    console.log('Streaming status:', chunk);
-                    //chunk = chunk.replace('\n', '  \n');
-                    setTranslatedResult((prevResult) => prevResult + chunk);
-                };
-
-                // Start the translation process
-                translateQueryResult(selectedModel, appName, userQuery, annotation, queryData.data, dataInstructions, handleDataChunk)
-                    .then((translatedResult) => {
-                        console.log("Translation completed.", translatedResult);
-                    })
-                    .catch((error) => {
-                        console.error("Error during translation:", error);
-                    })
-
+                await handleTranslation(queryData, userQuery, annotation, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
+            } else {
+                throw new Error(queryData.error);
             }
-            else {
-                console.error('Error during query:', queryData.error);
-                setDbQuery(queryData.query);
-                setDbResult(queryData.data);
-                setTranslatedResult(queryData.error);
-            }
-
-
         } catch (error) {
-            console.error('Exception during direct query:', error);
-            setTranslatedResult(error);
+            handleQueryError(error, setTranslatedResult);
+            setDbQuery(dbQuery);
+            setDbResult([]);
         } finally {
             setLoading(false);
         }

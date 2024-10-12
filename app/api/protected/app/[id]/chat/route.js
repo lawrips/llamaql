@@ -34,5 +34,7 @@ export async function POST(request, { params }) {
       }
     };
     await rag.chatStreaming(userQuery, userChat, dbResult, history, instructions, model, wrappedCallbacks);
-  });
+    streamCallbacks.onCompleted(); // Ensure we call onCompleted after translation is done
+
+  }, false);
 }

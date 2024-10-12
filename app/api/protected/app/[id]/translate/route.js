@@ -24,5 +24,5 @@ export async function POST(request, { params }) {
       console.error("Error in translate streaming:", error);
       streamCallbacks.onError(error.toString());
     }
-  });
+  }, false);
 }

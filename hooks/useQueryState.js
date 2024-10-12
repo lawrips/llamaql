@@ -1,17 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { fetchInitialOptions, executeDirectQuery, translateChartResult } from '../lib/utils/queryUtils';
+import { fetchInitialOptions, executeDirectQuery, translateChartResult, translateQueryResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 import { generateNiceTicks } from '../lib/utils/graphUtils';
-import { 
-    resetQueryState, 
-    getInstructions, 
-    executeQueries, 
-    handleMultipleQueries, 
-    handleDataChunk, 
+import {
+    resetQueryState,
+    getInstructions,
+    handleDataChunk,
     handleQueryError,
     handleTranslation
 } from '../lib/utils/queryHelpers';
-import { executeChatQuery } from '../lib/utils/queryUtils';
+import { executeNLQuery, executeChat } from '@/lib/utils/queryUtils';
+import { chatInstructions } from '@/lib/constants/instructions';
 
 export const useQueryState = (appName) => {
     const [userQuery, setUserQuery] = useState('');
@@ -133,44 +132,58 @@ export const useQueryState = (appName) => {
             setQueryButtonText('Query');
         }
     };
-    let accumulatedContent = '';
-
 
     const handleQuery = async (requery) => {
         if (userQuery || addedQueries.length > 0) {
-            setLoading(true);
             resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat);
+            setLoading(true);
 
             try {
-                const _instructions = getInstructions(queryInstructions, instructSubs, checkedItems);
+                let _instructions = getInstructions(queryInstructions, instructSubs, checkedItems);
                 const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
 
-                let accumulatedContent = '';
-                const results = await executeQueries(
-                    queries, 
-                    selectedModel, 
-                    appName, 
-                    _instructions, 
-                    dataSchema, 
-                    dataExplanation, 
-                    requery, 
-                    (parsedData) => {
-                        //console.log('Received data in handleQuery:', parsedData); // Log received data
-                        accumulatedContent = handleDataChunk(parsedData, accumulatedContent, setDbQuery);
-                    }
-                );
+                const results = await Promise.all(queries.map(query =>
+                    executeNLQuery(
+                        selectedModel,
+                        appName,
+                        query.query,
+                        query.annotation,
+                        _instructions,
+                        dataSchema,
+                        dataExplanation,
+                        requery,
+                        (parsedData) => handleDataChunk(parsedData, '', setDbQuery)
+                    )
+                ));
 
-                console.log('Final results:', results);
-                
+                _instructions = getInstructions(dataInstructions, instructSubs, checkedItems);
+
                 if (results && results.length > 0) {
-                    if (addedQueries.length > 0) {
-                        await handleMultipleQueries(results, addedQueries, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
-                    } else {
-                        await handleTranslation(results[0], userQuery, annotation, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
-                    }
-                } else {
-                    throw new Error('No results returned from query execution');
+                    // Set the last result to dbResult and dbQuery
+                    const lastResult = results[results.length - 1];
+                    setDbResult(lastResult.data || []);
+                    setDbQuery(lastResult.query || '');
+
+                    // Prepare data for translation
+                    const allData = results.map(r => r.data);
+                    const allQueries = queries.map(q => q.query);
+                    const allAnnotations = queries.map(q => q.annotation);
+
+                    // Single call to handleTranslation with all results
+                    await handleTranslation(
+                        allData,
+                        null,
+                        allQueries,
+                        allAnnotations, // Using the first annotation, adjust if needed
+                        selectedModel,
+                        appName,
+                        _instructions,
+                        setDbQuery,
+                        setDbResult,
+                        setTranslatedResult
+                    );
                 }
+
             } catch (error) {
                 handleQueryError(error, setTranslatedResult);
             } finally {
@@ -179,26 +192,82 @@ export const useQueryState = (appName) => {
         }
     };
 
-    const handleDirectQuery = async () => {
-        setLoading(true);
-        resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat);
 
-        try {
-            const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
-            
-            if (!queryData.error) {
-                await handleTranslation(queryData, userQuery, annotation, selectedModel, appName, dataInstructions, setDbQuery, setDbResult, setTranslatedResult);
-            } else {
-                throw new Error(queryData.error);
+    const handleDirectQuery = async () => {
+        if (userQuery) {
+            resetQueryState(null, setDbResult, setTranslatedResult, setUserChat);
+            setLoading(true);
+
+            try {
+                const result = await executeDirectQuery(selectedModel, appName, dbQuery);
+                console.log(result)
+                if (result) {
+                    setDbResult(result.data);
+
+                    // Handle translation
+                    setTranslatedResult(''); // Clear previous translation
+                    let _instructions = getInstructions(dataInstructions, instructSubs, checkedItems);
+
+                    await translateQueryResult(
+                        selectedModel,
+                        appName,
+                        userQuery,
+                        '', // No annotation for direct query
+                        result.data,
+                        _instructions, // No specific instructions for direct query
+                        (chunk) => {
+                            setTranslatedResult(prev => prev + chunk.content);
+                        }
+                    );
+                }
+
+            } catch (error) {
+                handleQueryError(error, setTranslatedResult);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            handleQueryError(error, setTranslatedResult);
-            setDbQuery(dbQuery);
-            setDbResult([]);
-        } finally {
-            setLoading(false);
         }
     };
+
+    const handleChat = async () => {
+        if (userChat) {
+            resetQueryState(null, null, setTranslatedResult, setUserChat);
+            setLoading(true);
+
+            const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
+
+            try {
+                const _instructions = getInstructions(chatInstructions, instructSubs, checkedItems);
+                const allQueries = queries.map(q => q.query + '(' + q.annotation + ')');
+    
+                const chatData = {
+                    userQuery: allQueries,
+                    schema: `${dataSchema}\n${dataExplanation}`,
+                    dbQuery: dbQuery,
+                    dbResult: dbResult,
+                    userChat: userChat,
+                    chatResult: translatedResult
+                };
+
+                
+                const result = await executeChat(
+                    selectedModel,
+                    appName,
+                    chatData,
+                    chunk => {
+                        console.log('chat chunk:', chunk.content);
+                        setTranslatedResult(prev => prev + chunk.content) // Accumulate chunks for smooth UI updates
+                    }
+                );
+
+            } catch (error) {
+                handleQueryError(error, setTranslatedResult);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
 
     // Function to be called when an option is selected from the dropdown
     const handleOptionSelect = (event, option) => {
@@ -350,49 +419,6 @@ export const useQueryState = (appName) => {
         }
     };
 
-    const handleChat = async () => {
-        if (dbResult) {
-            try {
-                let _userChat = userChat;
-                setUserChat('');
-                setLoading(true);
-                setTranslatedResult('');
-                let _translatedResult = '';
-
-                const chatData = {
-                    userQuery: addedQueries.length > 0 ? JSON.stringify(addedQueries) : `${userQuery} (${annotation})`,
-                    schema: `${dataSchema}\n${dataExplanation}`,
-                    dbQuery: dbQuery,
-                    dbResult: addedQueries.length > 0 ? addedQueriesData.map(i => i.data) : dbResult,
-                    userChat: _userChat,
-                    chatResult: translatedResult
-                };
-
-                await executeChatQuery(appName, chatData, (parsedData) => {
-                    if (parsedData.status === 'completed') {
-                        console.log('Chat completed.');
-                        if (_userChat === '/chart') {
-                            console.log('making chart:', _translatedResult);
-                            setChartData(_translatedResult);
-                            makeChart(_translatedResult);
-                        }
-                    } else if (parsedData.status === 'failed') {
-                        console.error('Chat failed:', parsedData.error);
-                        setTranslatedResult(`Error: ${parsedData.error}`);
-                    } else if (parsedData.chunk) {
-                        _translatedResult += parsedData.chunk;
-                        setTranslatedResult((prevResult) => prevResult + parsedData.chunk);
-                    }
-                });
-
-            } catch (ex) {
-                console.error('Error during chat request:', ex);
-                setTranslatedResult(`Error: ${ex.message}`);
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
 
     const handleSaveData = async () => {
         await fetch(`/api/protected/app/${appName}/save-data`, {

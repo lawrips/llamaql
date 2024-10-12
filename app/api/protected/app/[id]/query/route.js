@@ -23,5 +23,5 @@ export async function POST(request, { params }) {
 
   return createStreamResponse(async (streamHandler, streamCallbacks) => {
     await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, streamCallbacks);
-  });
+  }, true);
 }

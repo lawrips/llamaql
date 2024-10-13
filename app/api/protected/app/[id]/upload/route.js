@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from 'next/server';
 import AdmZip from 'adm-zip';
+import { Readable } from 'stream';
 
 const utils = require('@/lib/utils/typeUtils');
 const schemaUtils = require('@/lib/utils/schemaUtils');
@@ -16,164 +17,190 @@ const myDb = require('@/lib/services/sql');
 
 
 // Function to process a single CSV file
-const processCSV = async (db, csvContent, csvFilename) => {
-  // insert csv data into sql table
-  let result = await insertData(db, csvFilename.replace('.csv', ''), csvContent);
-  // create dataSchema for this table
+const processCSV = async (db, csvContent, csvFilename, sendStatus) => {
+  let result = await insertData(db, csvFilename.replace('.csv', ''), csvContent, sendStatus);
   schemaUtils.createSchema(db, csvFilename.replace('.csv', ''));
-
   return result;
 }
 
 export async function POST(request, { params }) {
   const { id } = params;
   const dbName = id;
+  const csvFiles = [];
   if (dbName) {
-    const csvFiles = [];
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendStatus = (message) => {
+          console.log(message);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: message })}\n\n`));
+        };
 
-    try {
-      const formData = await request.formData();
+        try {
+          sendStatus('Receiving file data...');
+          const formData = await request.formData();
+          const file = formData.get('file');
 
-      const file = formData.get('file'); // 'file' is the name of the form field
+          if (!file) {
+            sendStatus('No file uploaded');
+            controller.close();
+            return;
+          }
 
-      if (!file) {
-        return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-      }
+          // Access file properties
+          const fileName = file.name; // Original filename
+          const fileType = file.type; // MIME type
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
 
+          sendStatus('Processing uploaded file...');
+          // process files first
 
-      // Access file properties
-      const fileName = file.name; // Original filename
-      const fileType = file.type; // MIME type
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      // process files first
-
-      if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
-        // Handle single CSV file
-        const csvContent = buffer.toString('utf-8');
-        csvFiles.push({
-          fileName: fileName,
-          content: csvContent,
-        });
-
-
-      } else if (fileType === 'application/zip' || fileName.endsWith('.zip')) {
-        // Handle ZIP file
-        const zip = new AdmZip(buffer);
-        const zipEntries = zip.getEntries();
-
-        // Extract and process each CSV file in the ZIP
-        for (const entry of zipEntries) {
-          const entryName = entry.entryName;
-          if (entryName.endsWith('.csv')) {
-            const csvContent = entry.getData().toString('utf-8');
+          if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
+            // Handle single CSV file
+            const csvContent = buffer.toString('utf-8');
             csvFiles.push({
-              fileName: entryName,
+              fileName: fileName,
               content: csvContent,
             });
+            sendStatus(`Detected file: ${fileName}`);
 
-            console.log('Detected ' + entryName);
+
+          } else if (fileType === 'application/zip' || fileName.endsWith('.zip')) {
+            // Handle ZIP file
+            const zip = new AdmZip(buffer);
+            const zipEntries = zip.getEntries();
+
+            // Extract and process each CSV file in the ZIP
+            for (const entry of zipEntries) {
+              const entryName = entry.entryName;
+              if (entryName.endsWith('.csv')) {
+                const csvContent = entry.getData().toString('utf-8');
+                csvFiles.push({
+                  fileName: entryName,
+                  content: csvContent,
+                });
+
+                sendStatus(`Detected CSV in ZIP: ${entryName}`);
+              }
+            }
+
+            if (csvFiles.length === 0) {
+              sendStatus('No CSV files found in the ZIP');
+              return NextResponse.json({ message: 'No CSV files found in the ZIP' }, { status: 400 });
+            }
+
+          } else {
+            sendStatus('Unsupported file type uploaded');
+            return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
           }
+        } catch (error) {
+          console.error('Error processing file:', error);
+          sendStatus(`Error processing file: ${error.message}`);
+          stream.push(null);
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          });
         }
 
-        if (csvFiles.length === 0) {
-          return NextResponse.json({ message: 'No CSV files found in the ZIP' }, { status: 400 });
+        sendStatus('Setting up database...');
+        const session = await getServerSession(authOptions);
+        const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
+
+        const db = new Database(`${directoryPath}${dbName}.db`);
+        db.pragma('journal_mode = WAL');
+
+        try {
+          db.exec(`DROP TABLE IF EXISTS query_data`);
+          db.exec(`DROP TABLE IF EXISTS schema`);
+          db.exec(`DROP TABLE IF EXISTS saved_data`);
+          db.exec(`DROP TABLE IF EXISTS instructions`);
+          sendStatus(`Tables have been dropped.`);
+
+          const tableInfo = db.prepare("PRAGMA table_info(schema)").all();
+
+          if (tableInfo.length === 0) {
+            sendStatus("Table 'schema' was dropped successfully.");
+          } else {
+            sendStatus("Table 'schema' still exists.");
+          }
+
+          sendStatus('Processing CSV files...');
+          // process each file
+          if (csvFiles.length == 1) {
+            csvFiles[0].count = await processCSV(db, csvFiles[0].content, dbName, sendStatus);
+            sendStatus(`Processed ${csvFiles[0].fileName}: ${csvFiles[0].count} rows inserted.`);
+          }
+          else {
+            for (const file of csvFiles) {
+              sendStatus(`Processing ${file.fileName}...`);
+              file.count = await processCSV(db, file.content, file.fileName, sendStatus);
+              sendStatus(`Processed ${file.fileName}: ${file.count} rows inserted.`);
+            }
+          }
+
+          sendStatus('Creating setup...');
+          createSetup(db, sendStatus);
+
+          sendStatus('Creating examples...');
+          let schema = await createExamples(db, session.user.email, dbName, instructions, sendStatus);
+
+          sendStatus('Creating schema explanation...');
+          let explanation = await rag.createSchemaExplanation(instructions.schemaInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
+          db.prepare('INSERT INTO schema (schema) VALUES (?)').run([explanation]);
+
+
+          db.close();
+          sendStatus('Processing complete');
+        } catch (error) {
+          console.error('Error during database setup or processing:', error);
+          sendStatus(`Error during processing: ${error.message}`);
+          stream.push(null);
+          return new Response(stream, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          });
         }
-
       }
-    } catch (error) {
-      console.error('Error processing file:', error);
-      return NextResponse.json({ message: 'Error processing file' }, { status: 500 });
-    }
-
-    const session = await getServerSession(authOptions);
-    const directoryPath = path.join(process.cwd(), `db/${session.user.email}/`);
-
-    const db = new Database(`${directoryPath}${dbName}.db`);
-    db.pragma('journal_mode = WAL');
-
-    db.exec(`DROP TABLE IF EXISTS query_data`);
-    db.exec(`DROP TABLE IF EXISTS schema`);
-    //db.exec(`DROP TABLE IF EXISTS queries`);
-    db.exec(`DROP TABLE IF EXISTS saved_data`);
-    db.exec(`DROP TABLE IF EXISTS instructions`);
-    console.log(`Tables have been dropped.`);
-
-    const tableInfo = db.prepare("PRAGMA table_info(schema)").all();
-
-    if (tableInfo.length === 0) {
-      console.log("Table 'schema' was dropped successfully.");
-    } else {
-      console.log("Table 'schema' still exists.");
-    }
-
-    // process each file
-    if (csvFiles.length == 1) {
-      csvFiles[0].count = await processCSV(db, csvFiles[0].content, dbName);
-    }
-    else {
-      for (const file of csvFiles) {
-        console.log('processing ' + file.fileName);
-        file.count = await processCSV(db, file.content, file.fileName);
-        console.log('count: ' + file.count)
-      }
-    }
-
-    // one time setup for instructions, etc
-    createSetup(db);
-
-    // create example queries
-    let schema = await createExamples(db, session.user.email, dbName, instructions);
-
-    // create explanation of data schema
-    let explanation = await rag.createSchemaExplanation(instructions.schemaInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
-    db.prepare('INSERT INTO schema (schema) VALUES (?)').run([explanation]);
-
-
-    db.close();
-
-    return new Response(
-      JSON.stringify(
-        {
-          message: 'Processed successfully',
-          csvFiles: csvFiles.map(file => { return { fileName: file.fileName, count: file.count } }),
-          status: 'ok'
-        }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
     });
-  }
-  else {
-    return new Response(
-      JSON.stringify(
-        {
-          status: 'DB not found - must supply /appname'
-        }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
+  } else {
+    return NextResponse.json({ status: 'DB not found - must supply /appname' }, { status: 404 });
   }
 }
 
 
 
 
-const createSetup = (db) => {
-
+const createSetup = (db, sendStatus) => {
+  sendStatus('Creating instructions table...');
   db.exec(`CREATE TABLE instructions (data TEXT);`);
   db.prepare('INSERT INTO instructions (data) VALUES (?)').run([JSON.stringify(instructions)]);
-  console.log('created instructions')
+  sendStatus('Created instructions table.');
 
   db.exec(`CREATE TABLE IF NOT EXISTS queries (id INTEGER PRIMARY KEY, userQuery TEXT UNIQUE, userAnnotation TEXT, dbQuery TEXT, dbResult TEXT);`);
-
-  console.log('created queries')
+  sendStatus('Created queries table.');
 
   db.exec(`CREATE TABLE saved_data (id INTEGER PRIMARY KEY, data TEXT);`);
-  console.log('created saved_data')
+  sendStatus('Created saved_data table.');
 }
 
-const createExamples = async (db, email, dbName, instructions) => {
+const createExamples = async (db, email, dbName, instructions, sendStatus) => {
+  sendStatus('Creating example queries...');
   // populate example q's if they're emptyy
   let stmt = db.prepare(`SELECT * FROM queries`);
   let existingQueries = stmt.all();
@@ -183,7 +210,7 @@ const createExamples = async (db, email, dbName, instructions) => {
 
   if (existingQueries.length == 0) {
     let examples = await rag.createExamples(instructions.setupInstructions, JSON.stringify(schema.map(i => i.schema)), JSON.stringify(schema.map(i => i.examples)));
-    console.log(examples);
+    sendStatus('Generated example queries.');
 
     for (let example of examples) {
       myDb.run(email, dbName,
@@ -194,33 +221,32 @@ const createExamples = async (db, email, dbName, instructions) => {
         userAnnotation = excluded.userAnnotation
         WHERE queries.userQuery = excluded.userQuery`,
         [example.query, example.annotation]);
+      //sendStatus(`Inserted example query: ${example.query}`);
     }
 
+  } else {
+    sendStatus('Existing queries found. Skipping example creation.');
   }
   return schema;
 }
 
-const createDataTable = (db, tableName, parsedData) => {
-
+const createDataTable = (db, tableName, parsedData, sendStatus) => {
+  sendStatus(`Creating data table for ${tableName}...`);
   const columnTypes = utils.determineColumnTypes(parsedData);
   let sanitizedHeaders = [];
 
   const columns = parsedData.meta.fields.map((header, index) => {
     const sanitizedHeader = utils.sanitizeHeader(header, sanitizedHeaders);
     const sqlType = columnTypes[index];
-    return `${sanitizedHeader} ${sqlType}`;
+    return `"${sanitizedHeader}" ${sqlType}`;
   }).join(', ');
 
-  let createStmt = `DROP TABLE IF EXISTS "${tableName}"`;
-  db.exec(createStmt);
-  createStmt = `DROP TABLE IF EXISTS data_${tableName}`;
-  db.exec(createStmt);
+  db.exec(`DROP TABLE IF EXISTS "${tableName}"`);
+  db.exec(`DROP TABLE IF EXISTS data_${tableName}`);
 
-  console.log('columns:');
-  console.log(columns)
-  createStmt = `CREATE TABLE IF NOT EXISTS data_${tableName} (${columns})`;
-  db.exec(createStmt);
-  console.log('table created')
+  sendStatus(`Creating table data_${tableName}`);
+  db.exec(`CREATE TABLE IF NOT EXISTS data_${tableName} (${columns})`);
+  sendStatus(`Table data_${tableName} created successfully.`);
 };
 
 const normalizeLineBreaks = (data) => {
@@ -228,7 +254,7 @@ const normalizeLineBreaks = (data) => {
   return data.replace(/\r\n|\r|\n/g, '\n');
 };
 
-const insertData = async (db, tableName, data) => {
+const insertData = async (db, tableName, data, sendStatus) => {
   const normalizedData = normalizeLineBreaks(data);
 
   const parsedData = await new Promise((resolve, reject) => {
@@ -249,18 +275,16 @@ const insertData = async (db, tableName, data) => {
   });
 
 
-  console.log('about to sanitize headers')
+  sendStatus('Sanitizing headers...');
   let sanitizedHeaders = [];
   const headers = parsedData.meta.fields.map(header => utils.sanitizeHeader(header, sanitizedHeaders));
-  console.log('headers:')
-  console.log(headers)
-  console.log('parsedData')
-  createDataTable(db, tableName, parsedData);
+
+  sendStatus('Creating data table...');
+  createDataTable(db, tableName, parsedData, sendStatus);
 
   const placeholders = headers.map(() => '?').join(', ');
-  const insertStmt = db.prepare(`INSERT INTO data_${tableName} (${headers.join(', ')}) VALUES (${placeholders})`);
-  console.log('insertStmt:');
-  console.log(insertStmt.source)
+  const insertStmt = db.prepare(`INSERT INTO data_${tableName} (${headers.map(h => `"${h}"`).join(', ')}) VALUES (${placeholders})`);
+  sendStatus('Prepared SQL insert statement.');
 
   const transaction = db.transaction((parsedData) => {
     let count = 0;
@@ -275,7 +299,7 @@ const insertData = async (db, tableName, data) => {
   });
 
   const result = transaction(parsedData);
-  console.log(`Inserted ${result} rows`);
+  sendStatus(`Inserted ${result} rows into data_${tableName}.`);
 
   return result;
 };
@@ -294,6 +318,7 @@ function guessDelimiter(csvString) {
     const count = (sample.match(new RegExp(`\\${delimiter}`, 'g')) || []).length;
     delimiterCount[delimiter] = count;
   });
+
 
   // Find the delimiter with the highest occurrence
   return Object.keys(delimiterCount).reduce((a, b) =>

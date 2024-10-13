@@ -157,6 +157,7 @@ export const useQueryState = (appName) => {
                 ));
 
                 _instructions = getInstructions(dataInstructions, instructSubs, checkedItems);
+                setLoading(false);
 
                 if (results && results.length > 0) {
                     // Set the last result to dbResult and dbQuery

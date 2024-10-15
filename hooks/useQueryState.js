@@ -7,12 +7,14 @@ import {
     getInstructions,
     handleDataChunk,
     handleQueryError,
-    handleTranslation
+    handleTranslation,
+    createDataChunkHandler
 } from '../lib/utils/queryHelpers';
 import { executeNLQuery, executeChat } from '@/lib/utils/queryUtils';
 import { chatInstructions } from '@/lib/constants/instructions';
 
-export const useQueryState = (appName) => {
+
+export const useQueryState = (appName, modelOptions) => {
     const [userQuery, setUserQuery] = useState('');
     const [userChat, setUserChat] = useState('');
     const [annotation, setAnnotation] = useState('');
@@ -20,10 +22,9 @@ export const useQueryState = (appName) => {
     const [dbResult, setDbResult] = useState([]);
     const [translatedResult, setTranslatedResult] = useState('');
     const [chartData, setChartData] = useState([]);
-    const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+    const [selectedModel, setSelectedModel] = useState(modelOptions[1].value);
     const [loading, setLoading] = useState(false);
     const [queryOptions, setQueryOptions] = useState([]);
-    const [models, setModels] = useState([]);
     const [queryInstructions, setQueryInstructions] = useState('');
     const [requeryInstructions, setRequeryInstructions] = useState('');
     const [dataInstructions, setDataInstructions] = useState('');
@@ -84,11 +85,6 @@ export const useQueryState = (appName) => {
             }
             // uncomment these lines below when you want finetunes back in the picture
             //const finetunes = await fetch(`/api/protected/app/${appName}/finetune`).then(res => res.json());
-            setModels([
-                { value: "gpt-4o-mini", label: "gpt-4o-mini (default - fast & efficient)" },
-                { value: "gpt-4o-2024-08-06", label: "gpt-4o (slower & exp - use for building hard queries)" },
-                //...finetunes.map(i => ({ label: `${i.name} (${i.status})`, value: i.name }))
-            ]);
         };
 
 
@@ -142,6 +138,8 @@ export const useQueryState = (appName) => {
                 let _instructions = getInstructions(queryInstructions, instructSubs, checkedItems);
                 const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
 
+                const dataChunkHandler = createDataChunkHandler(setDbQuery);
+
                 const results = await Promise.all(queries.map(query =>
                     executeNLQuery(
                         selectedModel,
@@ -152,7 +150,7 @@ export const useQueryState = (appName) => {
                         dataSchema,
                         dataExplanation,
                         requery,
-                        (parsedData) => handleDataChunk(parsedData, '', setDbQuery)
+                        dataChunkHandler // Use the created handler here
                     )
                 ));
 
@@ -193,6 +191,10 @@ export const useQueryState = (appName) => {
         }
     };
 
+    
+    const handleModelSelect = (event) => {
+        setSelectedModel(event.target.value);
+    };
 
     const handleDirectQuery = async () => {
         if (userQuery) {
@@ -595,7 +597,6 @@ export const useQueryState = (appName) => {
         setSelectedModel,
         loading,
         queryOptions,
-        models,
         queryInstructions,
         setQueryInstructions,
         requeryInstructions,
@@ -650,6 +651,7 @@ export const useQueryState = (appName) => {
         handleRemoveQuery,
         addedQueries,
         queryButtonText,
-        dbQueryTextAreaRef
+        dbQueryTextAreaRef,
+        handleModelSelect,
     };
 };

@@ -1,154 +1,141 @@
-/* Existing Tailwind and other global styles... */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 17, 24, 39; /* Dark Gray Text */
-  --background-start-rgb: 249, 250, 251; /* Light Gray Background */
-  --background-end-rgb: 255, 255, 255; /* White Background */
-  --primary-color-rgb: 49, 130, 206; /* Soft Blue */
-  --border-radius: 0.375rem; /* Slightly rounded corners */
-}
-
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-start-rgb: 17, 24, 39; /* Dark Gray Background */
-    --background-end-rgb: 15, 23, 42; /* Almost Black Background */
-    --primary-color-rgb: 99, 102, 241; /* Updated Soft Blue */
-    /* Removed --foreground-rgb to keep it consistent */
-  }
+  --primary-color: #1976d2;
+  --primary-light: #63a4ff;
+  --primary-dark: #004ba0;
+  --secondary-color: #ff4081;
+  --background-color: #fafafa;
+  --surface-color: #ffffff;
+  --on-primary: #ffffff;
+  --on-secondary: #000000;
+  --on-background: #000000;
+  --on-surface: #000000;
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.54);
+  --border-radius: 4px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  color: rgb(var(--foreground-rgb));
-  font-family: 'Inter', sans-serif;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 0.5em;
+  font-weight: 500;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--primary-light);
 }
 
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  padding: 1rem;
-  background-color: rgb(var(--background-start-rgb));
-  border-radius: var(--border-radius);
-}
-
-a {
-  color: darkblue;
-}
-
-.autocomplete-container {
-  position: relative;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  padding: 16px;
 }
 
 .autocomplete-input {
   width: 100%;
-  padding: 0.5rem;
-  padding-right: 2.5rem;
-  background-color: white;
-  border: 1px solid rgba(var(--foreground-rgb), 0.1);
-  border-radius: var(--border-radius);
-  color: rgb(var(--foreground-rgb));
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--text-secondary);
+  background-color: var(--surface-color);
+  font-size: 16px;
+  transition: var(--transition);
+}
+
+.autocomplete-input:focus {
+  outline: none;
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .autocomplete-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  max-height: 200px;
-  overflow-y: auto;
-  background: white;
-  border: 1px solid rgba(var(--foreground-rgb), 0.1);
-  border-top: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 1000;
-  color: rgb(var(--foreground-rgb));
-  border-bottom-left-radius: var(--border-radius);
-  border-bottom-right-radius: var(--border-radius);
+  background-color: var(--surface-color);
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
 .autocomplete-option {
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
+  padding: 12px 16px;
+  transition: var(--transition);
 }
 
 .autocomplete-option:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.1);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
-/* Scoped styles for custom form inputs */
 .custom-form .custom-input {
   width: 100%;
-  padding: 0.5rem;
-  background-color: white;
-  border: 1px solid rgba(var(--foreground-rgb), 0.1);
-  border-radius: var(--border-radius);
-  color: rgb(var(--foreground-rgb));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--text-secondary);
+  background-color: var(--surface-color);
+  font-size: 16px;
+  transition: var(--transition);
 }
 
 .custom-form .custom-input:focus {
-  border-color: rgb(var(--primary-color-rgb));
   outline: none;
-  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3);
-}
-
-.custom-form .custom-input::placeholder {
-  color: rgba(var(--foreground-rgb), 0.5);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 button {
-  background-color: rgb(var(--primary-color-rgb));
-  color: white;
-  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: var(--on-primary);
   border: none;
+  padding: 10px 16px;
   border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  font-size: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s, box-shadow 0.2s;
+  transition: var(--transition);
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12);
 }
 
 button:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.9);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background-color: var(--primary-light);
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
 }
 
-button:active {
-  background-color: rgba(var(--primary-color-rgb), 0.8);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
+/* Update the overlay styles */
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
 }
 
+/* Update the spinner styles */
 .spinner {
-  border: 8px solid rgba(0, 0, 0, 0.1);
-  border-left: 8px solid #000;
+  border: 4px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
+  border-top: 4px solid var(--primary-color);
   width: 50px;
   height: 50px;
   animation: spin 1s linear infinite;
@@ -160,128 +147,168 @@ button:active {
 }
 
 .chart {
-  background: white;
-  margin-bottom: 20px;
-}
-
-.tab-container {
-  display: flex;
-  width: 100%;
-  align-items: center;
-}
-
-.collapsible {
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-/* New styles for drag and drop component */
-.drag-drop-container {
-  border: 2px dashed rgba(var(--foreground-rgb), 0.2);
+  background-color: var(--surface-color);
   border-radius: var(--border-radius);
-  padding: 1.25rem;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  margin-bottom: 24px;
+}
+
+.drag-drop-container {
+  border: 2px dashed var(--text-secondary);
+  border-radius: var(--border-radius);
+  padding: 24px;
   text-align: center;
-  margin: 1.25rem;
-  transition: all 0.3s ease-in-out;
+  transition: var(--transition);
 }
 
 .drag-drop-container:hover {
-  border-color: rgb(var(--primary-color-rgb));
-}
-
-.drag-drop-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.drag-drop-text {
-  color: rgba(var(--foreground-rgb), 0.7);
-}
-
-.file-name {
-  color: rgb(var(--foreground-rgb));
-  font-weight: 500;
+  border-color: var(--primary-color);
 }
 
 .upload-button {
-  background-color: rgb(var(--primary-color-rgb));
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.2s;
+  background-color: var(--secondary-color);
+  color: var(--on-secondary);
 }
 
 .upload-button:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.9);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  background-color: #ff79b0;
 }
 
 .tooltip {
   position: absolute;
-  background-color: #333;
-  color: white;
-  padding: 5px;
-  border-radius: 4px;
-  font-size: 16px;
-  top: 50px; /* Distance from the button */
-  left: 50%; /* Center horizontally relative to the button */
-  transform: translateX(-50%); /* Centers it exactly */
-  white-space: wrap;
-  width: 100px;
-  z-index: 100;
+  background-color: #616161;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
+  z-index: 1000;
+  width: 200px; /* Adjust as needed */
+  text-align: center;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
 }
 
-/* Styles specific to the custom MUI TextField */
+.tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #616161 transparent;
+}
+
 .custom-mui-textfield .MuiOutlinedInput-root {
-  height: 3rem; /* Adjust based on your needs */
-  display: flex;
-  align-items: center; /* Vertically center the input content */
-  padding: 0; /* Remove extra padding */
+  border-radius: var(--border-radius);
 }
 
-.custom-mui-textfield .MuiOutlinedInput-input {
-  padding: 0.5rem; /* Top and bottom padding */
-  height: auto; /* Ensure height adjusts correctly */
+.custom-mui-textfield .MuiOutlinedInput-notchedOutline {
+  border-color: var(--text-secondary);
 }
 
-.custom-mui-textfield .MuiFormLabel-root {
-  top: 0px; /* Adjust the label's vertical position */
+.custom-mui-textfield .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--text-primary);
 }
 
-.custom-mui-textfield .MuiOutlinedInput-root fieldset {
-  border-color: rgba(0, 0, 0, 0.23); /* Default border color */
-}
-
-.custom-mui-textfield .MuiOutlinedInput-root:hover fieldset {
-  border-color: black; /* Border color on hover */
-}
-
-.custom-mui-textfield .MuiOutlinedInput-root.Mui-focused fieldset {
-  border-color: #3f51b5; /* Focused border color */
-  border-width: 2px; /* Focused border thickness */
+.custom-mui-textfield .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-color);
 }
 
 .markdown-content {
- 
-  white-space: pre-wrap;
-  line-height: 1.5; /* Adjust line height as needed */
-  background-color: #f9f9f9; /* Optional: Adds a background color */
-  height: 300px; /* Use max-height instead of fixed height */
-  max-height: 300px; /* Use max-height instead of fixed height */
-  border: 1px solid #ddd; /* Optional */
-  padding: 5px;
-  overflow-y: scroll;
+  background-color: var(--surface-color);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  min-height: 240px; /* Set a minimum height */
+  max-height: 240px; /* Set a maximum height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  white-space: pre-wrap; /* Preserve whitespace and wrap text */
+}
+
+.markdown-wrapper {
+  height: 100%; /* Ensure the wrapper takes full height */
 }
 
 .markdown-wrapper:focus-within {
-  outline: 2px solid #007bff; /* or any color you prefer */
+  outline: 2px solid var(--primary-color);
+}
+
+@media (max-width: 600px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+/* Material Design elevation classes */
+.elevation-1 {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.elevation-2 {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+.elevation-3 {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+}
+
+/* Ripple effect for buttons */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10,10);
+  opacity: 0;
+  transition: transform .5s, opacity 1s;
+}
+
+.ripple:active:after {
+  transform: scale(0,0);
+  opacity: .3;
+  transition: 0s;
+}
+
+/* Add this new style for the chat input */
+.chat-input {
+  min-height: 100px; /* Adjust this value as needed */
+  resize: vertical;
+}
+
+/* Add these new styles */
+.tab-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.react-tabs__tab-list {
+  flex-grow: 1;
+  margin-bottom: 0;
+}
+
+.collapsible {
+  cursor: pointer;
+  padding: 10px;
 }

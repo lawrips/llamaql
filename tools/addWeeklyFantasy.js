@@ -5,7 +5,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 // User-specified constants
 const SOURCE_DIR = '/users/lawri/Downloads/nfl';
-const WEEK_NUMBER = 5;
+const WEEK_NUMBER = 6;
 
 class FantasyFootballStatsProcessor {
     constructor() {

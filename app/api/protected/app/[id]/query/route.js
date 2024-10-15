@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
 
   conversations.deleteAll(dbName, session.user.email);
 
-  const rag = new Rag(email, dbName);
+  const rag =   new Rag(email, dbName);
 
   return createStreamResponse(async (streamHandler, streamCallbacks) => {
     await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, streamCallbacks);

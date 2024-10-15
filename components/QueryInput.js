@@ -113,22 +113,24 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
             )}
 
             {/* Added Queries Section */}
-            <div className="added-queries-section mt-4">
-                <h3 className="text-sm font-semibold mb-2">Added Queries:</h3>
-                <div className="max-h-40 overflow-y-auto">
-                    {addedQueries.map((query, index) => (
-                        <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded mb-1 text-sm">
-                            <span className="flex-grow mr-2 truncate">{query.query}</span>
-                            <Trash2
-                                color="gray"
-                                size={18}
-                                className="text-gray-400 cursor-pointer hover:text-gray-600 flex-shrink-0"
-                                onClick={() => handleRemoveQuery(index)}
-                            />
-                        </div>
-                    ))}
+            {addedQueries && addedQueries.length > 0 ?
+                <div className="added-queries-section mt-4">
+                    <h3 className="text-sm font-semibold mb-2">Added Queries:</h3>
+                    <div className="max-h-40 overflow-y-auto">
+                        {addedQueries.map((query, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-100 p-2 rounded mb-1 text-sm">
+                                <span className="flex-grow mr-2 truncate">{query.query}</span>
+                                <Trash2
+                                    color="gray"
+                                    size={18}
+                                    className="text-gray-400 cursor-pointer hover:text-gray-600 flex-shrink-0"
+                                    onClick={() => handleRemoveQuery(index)}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </div>
+                : null}
         </div>
     );
 };

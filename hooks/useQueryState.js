@@ -202,26 +202,26 @@ export const useQueryState = (appName, modelOptions) => {
             setLoading(true);
 
             try {
-                const result = await executeDirectQuery(selectedModel, appName, dbQuery);
-                console.log(result)
-                if (result) {
+                let result = await executeDirectQuery(selectedModel, appName, dbQuery);
+                console.log('result', result)
+                if (result && result.data) {
                     setDbResult(result.data);
 
                     // Handle translation
                     setTranslatedResult(''); // Clear previous translation
                     let _instructions = getInstructions(dataInstructions, instructSubs, checkedItems);
 
-                    await translateQueryResult(
+                    const dataChunkHandler = createDataChunkHandler(setTranslatedResult);
+
+                    result = await translateQueryResult(
                         selectedModel,
                         appName,
                         userQuery,
                         '', // No annotation for direct query
                         result.data,
                         _instructions, // No specific instructions for direct query
-                        (chunk) => {
-                            setTranslatedResult(prev => prev + chunk.content);
-                        }
-                    );
+                        dataChunkHandler
+                    );                    
                 }
 
             } catch (error) {
@@ -239,10 +239,12 @@ export const useQueryState = (appName, modelOptions) => {
 
             const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
 
+            let result;
             try {
                 const _instructions = getInstructions(chatInstructions, instructSubs, checkedItems);
                 const allQueries = queries.map(q => q.query + '(' + q.annotation + ')');
-    
+                const dataChunkHandler = createDataChunkHandler(setTranslatedResult);
+
                 const chatData = {
                     userQuery: allQueries,
                     schema: `${dataSchema}\n${dataExplanation}`,
@@ -253,15 +255,17 @@ export const useQueryState = (appName, modelOptions) => {
                 };
 
                 
-                const result = await executeChat(
+                result = await executeChat(
                     selectedModel,
                     appName,
                     chatData,
-                    chunk => {
-                        console.log('chat chunk:', chunk.content);
-                        setTranslatedResult(prev => prev + chunk.content) // Accumulate chunks for smooth UI updates
-                    }
+                    dataChunkHandler
                 );
+
+                console.log("chart translatedResult", translatedResult)
+                if (userChat.toLowerCase().startsWith('/chart')) {
+                    makeChart(result);
+                }
 
             } catch (error) {
                 handleQueryError(error, setTranslatedResult);

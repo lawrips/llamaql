@@ -4,6 +4,7 @@ import Rag from '@/lib/rag/sqlite3/rag';
 import { createStreamResponse } from '@/lib/utils/streamUtils';
 const utils = require('@/lib/utils/shareUtils');
 const conversations = require('@/lib/utils/converastionsUtils');
+import defaultInstructions from '@/lib/constants/instructions';
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
@@ -12,9 +13,21 @@ export async function POST(request, { params }) {
   const { id } = params;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
+  const maxLength = 10000;
 
   console.log("****** NEW CHAT REQUEST ******** ");
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
+
+  if (dbResult && JSON.stringify(dbResult).length > maxLength) {
+    return NextResponse.json(
+      { error: 'Input exceeds maximum allowed tokens' },
+      { status: 413 }
+    )
+  }
+
+  if (userChat.toLowerCase().startsWith('/chart') ) {
+    instructions = defaultInstructions.chartInstructions;
+  }
 
   let history = conversations.getAll(dbName, session.user.email);
 

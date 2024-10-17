@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { createStreamResponse } from '@/lib/utils/streamUtils';
 const utils = require('@/lib/utils/shareUtils');
+// Add this import
+import { NextResponse } from 'next/server';
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
@@ -11,10 +13,20 @@ export async function POST(request, { params }) {
   const model = searchParams.get('model');
   const { id } = params;
 
+  const maxLength = 10000;
+
   console.log("****** NEW TRANSLATE REQUEST ********");
 
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
   const rag = new Rag(email, dbName);
+
+  // Check if body.input exceeds rag.maxTokens
+  if (body.input && JSON.stringify(body.input).length > maxLength) {
+      return NextResponse.json(
+      { error: 'Input exceeds maximum allowed tokens' },
+      { status: 413 }
+    );
+  }
 
   return createStreamResponse(async (streamHandler, streamCallbacks) => {
     try {

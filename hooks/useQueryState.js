@@ -81,7 +81,13 @@ export const useQueryState = (appName, modelOptions) => {
                 setQueryInstructions(_instructions.queryInstructions);
                 setRequeryInstructions(_instructions.requeryInstructions);
                 setDataInstructions(_instructions.dataInstructions);
-                const substitutions = [...new Set(_instructions.queryInstructions.match(/{([^}]+)}/g).map(match => match.slice(1, -1)))];
+                // This line extracts unique single-word placeholders from the query instructions:
+                // 1. _instructions.queryInstructions.match(/{(\w+)}/g) finds all occurrences of single words between curly braces {}
+                // 2. .map(match => match.slice(1, -1)) removes the curly braces from each match
+                // 3. new Set(...) creates a set of unique values
+                // 4. [...] spreads the set back into an array
+                // The result is an array of unique single-word placeholder names without curly braces
+                const substitutions = [...new Set(_instructions.queryInstructions.match(/{(\w+)}/g).map(match => match.slice(1, -1)))];
                 setInstructSubs(substitutions);
                 setCheckedItems(new Set(substitutions));
             }

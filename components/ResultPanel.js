@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CheckCheck, Check, Flag, SquareCheck, SquareSlash, Square, CircleCheckBig, CircleAlert } from 'lucide-react';
 
 import {
   ResponsiveContainer,
@@ -36,10 +37,11 @@ const colors = [
   '#795548', // Brown
 ];
 
-const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handleChartClicked }) => {
+const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handleChartClicked, queryEvaluation, queryEvaluationReason }) => {
   const markdownRef = useRef(null);
   const [chartType, setChartType] = useState('BarChart');
   const [isMarkdownFocused, setIsMarkdownFocused] = useState(false);
+  const [visibleTooltip, setVisibleTooltip] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -75,13 +77,47 @@ const ResultPanel = ({ translatedResult, chartData, chartTicks, chartKeys, handl
     ? { stackOffset: "expand" }
     : {};
 
+  const getConfidenceIcon = () => {
+    let icon;
+    switch (queryEvaluation) {
+      case 'exact_match':
+        icon = <CircleCheckBig size={24} color="green" />;
+        break;
+      case 'similar_derivative':
+        icon = <CircleCheckBig size={24} color="gray" />;
+        break;
+      case 'new_class':
+        icon = <CircleAlert size={24} color="gray" />;
+        break;
+      default:
+        icon = null;
+    }
+
+    return (
+      <div
+        style={{ position: 'relative', display: 'inline-block' }}
+        onMouseEnter={() => setVisibleTooltip(true)}
+        onMouseLeave={() => setVisibleTooltip(false)}
+      >
+        {icon}
+        {visibleTooltip && (
+          <div className="tooltip">
+            {queryEvaluationReason}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div>
       <Tabs>
-        <TabList>
-          <Tab>Results</Tab>
-          <Tab>Chart</Tab>
-        </TabList>
+        <div className="flex items-center">
+          <TabList className="flex-grow">
+            <Tab><span style={{ display: 'flex', alignItems: 'center' }}>Results {queryEvaluation ? <span style={{ marginLeft: '5px' }}>{getConfidenceIcon()}</span> : null}</span></Tab>
+            <Tab>Chart</Tab>
+          </TabList>
+        </div>
         <TabPanel>
           <div 
             ref={markdownRef} 

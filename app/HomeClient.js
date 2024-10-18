@@ -17,9 +17,9 @@ import { Search, Stars, ChevronDown } from "lucide-react";
 
 const modelOptions = [
     { header: 'Cheaper and Faster', selectable: false },
-    { value: 'anthropic/claude-3-haiku', display: 'Claude 3 Haiku', selectable: true },
-    { value: 'openai/gpt-4o-mini', display: 'GPT-4o Mini', selectable: true },
     { value: 'google/gemini-flash-1.5', display: 'Gemini 1.5 Flash', selectable: true },
+    { value: 'openai/gpt-4o-mini', display: 'GPT-4o Mini', selectable: true },
+    { value: 'anthropic/claude-3-haiku', display: 'Claude 3 Haiku', selectable: true },
     { header: 'More Expensive and Slower', selectable: false },
     { value: 'anthropic/claude-3.5-sonnet:beta', display: 'Claude 3.5 Sonnet', selectable: true },
     { value: 'openai/gpt-4o-2024-08-06', display: 'GPT-4o', selectable: true },
@@ -99,6 +99,8 @@ export default function HomeClient({ appName }) {
         queryButtonText,
         dbQueryTextAreaRef,
         handleModelSelect,
+        queryEvaluation,
+        queryEvaluationReason
     } = useQueryState(appName, modelOptions);
 
     const [visibleTooltip, setVisibleTooltip] = useState(null);
@@ -227,6 +229,8 @@ export default function HomeClient({ appName }) {
                 chartTicks={chartTicks}
                 chartKeys={chartKeys}
                 handleChartClicked={handleChartClicked}
+                queryEvaluation={queryEvaluation}
+                queryEvaluationReason={queryEvaluationReason}
             />
 
             <ActionButtons

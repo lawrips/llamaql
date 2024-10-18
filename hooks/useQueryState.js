@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { fetchInitialOptions, executeDirectQuery, translateChartResult, translateQueryResult } from '../lib/utils/queryUtils';
+import { fetchInitialOptions, executeDirectQuery, translateQueryResult } from '../lib/utils/queryUtils';
 import { useRouter } from 'next/navigation';
 import { generateNiceTicks } from '../lib/utils/graphUtils';
 import {
     resetQueryState,
     getInstructions,
-    handleDataChunk,
     handleQueryError,
     handleTranslation,
     createDataChunkHandler
@@ -48,6 +47,9 @@ export const useQueryState = (appName, modelOptions) => {
     const [addedQueries, setAddedQueries] = useState([]);
     const [queryButtonText, setQueryButtonText] = useState('Query');
     const [addedQueriesData, setAddedQueriesData] = useState([]);
+    const [queryEvaluation, setQueryEvaluation] = useState('');
+    const [queryEvaluationReason, setQueryEvaluationReason] = useState('');
+
     const dbQueryTextAreaRef = useRef(null);
     const router = useRouter();
 
@@ -131,7 +133,7 @@ export const useQueryState = (appName, modelOptions) => {
 
     const handleQuery = async (requery) => {
         if (userQuery || addedQueries.length > 0) {
-            resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat);
+            resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
             setLoading(true);
 
             try {
@@ -162,6 +164,9 @@ export const useQueryState = (appName, modelOptions) => {
                     const lastResult = results[results.length - 1];
                     setDbResult(lastResult.data || []);
                     setDbQuery(lastResult.query || '');
+                    setQueryEvaluation(lastResult.evaluation.type || 'new_class');
+                    setQueryEvaluationReason(lastResult.evaluation.reason || '');
+                    console.log('queryEvaluationReason', queryEvaluationReason)
 
                     // Prepare data for translation
                     const allData = results.map(r => r.data);
@@ -198,7 +203,7 @@ export const useQueryState = (appName, modelOptions) => {
 
     const handleDirectQuery = async () => {
         if (userQuery) {
-            resetQueryState(null, setDbResult, setTranslatedResult, setUserChat);
+            resetQueryState(null, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
             setLoading(true);
 
             try {
@@ -206,6 +211,7 @@ export const useQueryState = (appName, modelOptions) => {
                 console.log('result', result)
                 if (result && result.data) {
                     setDbResult(result.data);
+                    setQueryEvaluation('new_class');
 
                     // Handle translation
                     setTranslatedResult(''); // Clear previous translation
@@ -409,14 +415,14 @@ export const useQueryState = (appName, modelOptions) => {
     };
 
     const handleChartClicked = async () => {
-        if (!chartData) {
+/*        if (!chartData) {
             setLoading(true);
             console.log(dbResult);
             const translatedData = await translateChartResult(selectedModel, appName, dbResult);
             setChartData(translatedData.data);
             makeChart(translatedData.data);
             setLoading(false);
-        }
+        }*/
     };
 
     const handleChatReturn = (e) => {
@@ -657,5 +663,7 @@ export const useQueryState = (appName, modelOptions) => {
         queryButtonText,
         dbQueryTextAreaRef,
         handleModelSelect,
+        queryEvaluation,
+        queryEvaluationReason,
     };
 };

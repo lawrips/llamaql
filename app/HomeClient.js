@@ -100,7 +100,8 @@ export default function HomeClient({ appName }) {
         dbQueryTextAreaRef,
         handleModelSelect,
         queryEvaluation,
-        queryEvaluationReason
+        queryEvaluationReason,
+        handleGenerateQuery,
     } = useQueryState(appName, modelOptions);
 
     const [visibleTooltip, setVisibleTooltip] = useState(null);
@@ -131,6 +132,8 @@ export default function HomeClient({ appName }) {
                     handleAddQuery={handleAddQuery}
                     handleRemoveQuery={handleRemoveQuery}
                     addedQueries={addedQueries}
+                    handleGenerateQuery={handleGenerateQuery}
+                    setAnnotation={setAnnotation}
                 />
                 &nbsp;&nbsp;
                 <AnnotationInput

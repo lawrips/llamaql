@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Plus, Search, Trash2 } from 'lucide-react';
+import { X, Plus, Search, Trash2, Stars } from 'lucide-react';
 
-const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, focusedInput, setFocusedInput, getInputStyle, handleKeyDown, shared, handleCheckboxChange, checkedOptions, addedQueries, handleAddQuery, handleRemoveQuery }) => {
+const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, handleOptionSelect, handleDeleteOption, showDropdown, setShowDropdown, focusedInput, setFocusedInput, getInputStyle, handleKeyDown, shared, handleCheckboxChange, checkedOptions, addedQueries, handleAddQuery, handleRemoveQuery, handleGenerateQuery }) => {
     const dropdownRef = useRef(null);
+    const inputRef = useRef(null);
+    const prevUserQueryRef = useRef('');
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -18,10 +20,25 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
         };
     }, [setShowDropdown, setFocusedInput]);
 
+    // Modified useEffect to focus only when userQuery changes and is not empty
+    useEffect(() => {
+        if (inputRef.current && userQuery && userQuery !== prevUserQueryRef.current) {
+            inputRef.current.focus();
+        }
+        prevUserQueryRef.current = userQuery;
+    }, [userQuery]);
+
+    const handleIconClick = (e, action) => {
+        e.preventDefault();
+        e.stopPropagation();
+        action();
+    };
+
     return (
         <div style={getInputStyle('query')} className="relative">
             <div className="relative">
                 <input
+                    ref={inputRef}
                     className="w-full p-2 pr-16 border rounded"
                     style={{ width: '100%', boxSizing: 'border-box' }}
                     value={userQuery}
@@ -38,28 +55,33 @@ const QueryInput = ({ userQuery, setUserQuery, queryOptions, handleOptionSelect,
                     onKeyDown={handleKeyDown}
                 />
                 <div className="absolute right-0 top-0 h-full flex items-center pr-2">
-                    <Plus
-                        className="text-gray-400 cursor-pointer mr-2"
-                        size={20}
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }}
-                        onClick={handleAddQuery}
-                    />
-                    <X
-                        className="text-gray-400 cursor-pointer"
-                        size={20}
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setUserQuery('');
-                        }}
-                    />
+                    {userQuery ? (
+                        <>
+                            <Plus
+                                className="text-gray-400 cursor-pointer mr-2"
+                                size={20}
+                                onMouseDown={(e) => handleIconClick(e, handleAddQuery)}
+                            />
+                            <X
+                                className="text-gray-400 cursor-pointer"
+                                size={20}
+                                onMouseDown={(e) => handleIconClick(e, () => {
+                                    setUserQuery('');
+                                    setAnnotation('');
+                                })}
+                            />
+                        </>
+                    ) : (
+                        <Stars
+                            className="text-gray-400 cursor-pointer"
+                            size={20}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                            onClick={handleGenerateQuery}
+                        />
+                    )}
                 </div>
             </div>
 

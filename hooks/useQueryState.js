@@ -137,6 +137,25 @@ export const useQueryState = (appName, modelOptions) => {
         }
     };
 
+    const handleGenerateQuery = async () => {
+        resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
+        setLoading(true);
+        console.log('generating query')
+        let res = await fetch(`/api/protected/app/${appName}/generate-query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+        });
+        setLoading(false);
+
+        let json = await res.json();
+        // show confirmation dialog
+        setUserQuery(json.examples[0].query);
+        setAnnotation(json.examples[0].annotation);
+        
+        // The focus will be set automatically due to the useEffect in QueryInput
+    };
+
     const handleQuery = async (requery) => {
         if (userQuery || addedQueries.length > 0) {
             resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
@@ -161,6 +180,8 @@ export const useQueryState = (appName, modelOptions) => {
                         dataChunkHandler // Use the created handler here
                     )
                 ));
+
+                console.log('results', results)
 
                 _instructions = getInstructions(dataInstructions, instructSubs, checkedItems);
                 setLoading(false);
@@ -671,5 +692,7 @@ export const useQueryState = (appName, modelOptions) => {
         handleModelSelect,
         queryEvaluation,
         queryEvaluationReason,
+        handleGenerateQuery,
+        setAnnotation
     };
 };

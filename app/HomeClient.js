@@ -1,7 +1,7 @@
 // app/HomeClient.js
 "use client";
 
-import { React, useState } from 'react';
+import React, { useState } from 'react';
 import { useSession } from "next-auth/react";
 import { useQueryState } from '../hooks/useQueryState';
 import QueryInput from '../components/QueryInput';
@@ -13,7 +13,8 @@ import LoadingOverlay from '../components/LoadingOverlay';
 import ModalDialog from '@/components/ModalDialog';
 import TermsModal from '@/components/TermsModal';
 import { Search, Stars, ChevronDown } from "lucide-react";
-
+import Switch from 'react-switch';
+import QueryControls from '../components/QueryControls';
 
 const modelOptions = [
     { header: 'Cheaper and Faster', selectable: false },
@@ -102,6 +103,10 @@ export default function HomeClient({ appName }) {
         queryEvaluation,
         queryEvaluationReason,
         handleGenerateQuery,
+        deepSearch,
+        setDeepSearch,
+        expectedResults,
+        setExpectedResults,
     } = useQueryState(appName, modelOptions);
 
     const [visibleTooltip, setVisibleTooltip] = useState(null);
@@ -147,59 +152,21 @@ export default function HomeClient({ appName }) {
                 />
             </div>
             <div className="flex w-full pb-4 pr-4 items-center">
-                <div className="flex gap-4">
-                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <button onClick={() => handleQuery(false)}
-                            onMouseEnter={() => setVisibleTooltip(0)}
-                            onMouseLeave={() => setVisibleTooltip(null)}
-                            className="flex items-center"
-                        >
-                            <Search className="mr-2 h-4 w-4" />
-                            {queryButtonText} (fast)
-                        </button>
-                        {visibleTooltip === 0 && (
-                            <div className="tooltip">
-                                {tooltips[0]}
-                            </div>
-                        )}
-                    </div>
-                    <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <button onClick={() => handleQuery(true)}
-                            onMouseEnter={() => setVisibleTooltip(1)}
-                            onMouseLeave={() => setVisibleTooltip(null)}
-                            className="flex items-center"
-                        >
-                            <Stars className="mr-2 h-4 w-4" />
-                            Deep {queryButtonText} (pro)
-                        </button>
-                        {visibleTooltip === 1 && (
-                            <div className="tooltip">
-                                {tooltips[1]}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="relative mr-4 ml-4" style={{ width: '300px' }}>
-                    <select
-                        value={selectedModel}
-                        onChange={handleModelSelect}
-                        className="w-full p-2 border rounded appearance-none bg-white"
-                    >
-                        {modelOptions.map((option, index) => (
-                            option.selectable ? (
-                                <option key={index} value={option.value}>
-                                    {option.display}
-                                </option>
-                            ) : (
-                                <option key={index} disabled className="font-bold bg-gray-100">
-                                    {option.header}
-                                </option>
-                            )
-                        ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <ChevronDown size={20} />
-                    </div>
+                <div className="w-full">
+                    <QueryControls
+                        handleQuery={handleQuery}
+                        queryButtonText={queryButtonText}
+                        selectedModel={selectedModel}
+                        handleModelSelect={handleModelSelect}
+                        modelOptions={modelOptions}
+                        setDeepSearch={setDeepSearch}
+                        deepSearch={deepSearch}
+                        setVisibleTooltip={setVisibleTooltip}
+                        visibleTooltip={visibleTooltip}
+                        tooltips={tooltips}
+                        expectedResults={expectedResults}
+                        setExpectedResults={setExpectedResults}
+                    />
                 </div>
             </div>
 

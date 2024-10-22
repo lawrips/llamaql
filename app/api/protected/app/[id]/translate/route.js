@@ -16,13 +16,13 @@ export async function POST(request, { params }) {
   const maxLength = 10000;
 
   console.log("****** NEW TRANSLATE REQUEST ********");
-
+  console.log('body size: ' + body.input[0]?.length);
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
   const rag = new Rag(email, dbName);
 
   // Check if body.input exceeds rag.maxTokens
   if (body.input && JSON.stringify(body.input).length > maxLength) {
-      return NextResponse.json(
+    return NextResponse.json(
       { error: 'Input exceeds maximum allowed tokens' },
       { status: 413 }
     );
@@ -34,7 +34,7 @@ export async function POST(request, { params }) {
       streamCallbacks.onCompleted(); // Ensure we call onCompleted after translation is done
     } catch (error) {
       console.error("Error in translate streaming:", error);
-      streamCallbacks.onError(error.toString());
+      streamCallbacks.onError(body.query, error.toString());
     }
   }, false);
 }

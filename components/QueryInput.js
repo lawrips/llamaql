@@ -8,7 +8,7 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) && !inputRef.current.contains(event.target)) {
                 setShowDropdown(false);
                 setFocusedInput(null);
             }
@@ -20,13 +20,13 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
         };
     }, [setShowDropdown, setFocusedInput]);
 
-    // Modified useEffect to focus only when userQuery changes and is not empty
+    // Modify this useEffect to prevent auto-focus when dropdown is closed
     useEffect(() => {
-        if (inputRef.current && userQuery && userQuery !== prevUserQueryRef.current) {
+        if (inputRef.current && userQuery && userQuery !== prevUserQueryRef.current && showDropdown) {
             inputRef.current.focus();
         }
         prevUserQueryRef.current = userQuery;
-    }, [userQuery]);
+    }, [userQuery, showDropdown]);
 
     const handleIconClick = (e, action) => {
         e.preventDefault();
@@ -51,6 +51,15 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
                     onFocus={() => {
                         setShowDropdown(true);
                         setFocusedInput('query');
+                    }}
+                    onBlur={() => {
+                        // Add a small delay to allow click events on dropdown to fire first
+                        setTimeout(() => {
+                            if (!dropdownRef.current?.contains(document.activeElement)) {
+                                setShowDropdown(false);
+                                setFocusedInput(null);
+                            }
+                        }, 100);
                     }}
                     onKeyDown={handleKeyDown}
                 />
@@ -96,22 +105,13 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
                                 className="relative flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                                 key={index}
                                 onClick={(e) => {
-                                    if (e.target.type !== 'checkbox') {
-                                        handleOptionSelect(e, option);
-                                    }
+                                    handleOptionSelect(e, option);
+                                    setShowDropdown(false);
+                                    // Prevent immediate re-focus on input
+                                    e.preventDefault();
+                                    inputRef.current.blur();
                                 }}
                             >
-                                <div className="flex items-center mr-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={!!checkedOptions[option]}
-                                        className="form-checkbox h-5 w-5 text-blue-600 transition duration-150 ease-in-out"
-                                        onChange={(e) => {
-                                            e.stopPropagation();
-                                            handleCheckboxChange(option);
-                                        }}
-                                    />
-                                </div>
                                 <span className="flex-grow">{option}</span>
                                 {!shared && (
                                     <Trash2

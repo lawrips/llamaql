@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
   console.log("****** NEW QUERY REQUEST ******** ");
 
   const body = await request.json();
-  let { input, annotation, instructions, schema, generate } = body;
+  let { input, annotation, instructions, schema, generate, expectedResults } = body;
   const { id } = params;
   const { searchParams } = new URL(request.url);
   const model = searchParams.get('model');
@@ -21,7 +21,9 @@ export async function POST(request, { params }) {
 
   const rag =   new Rag(email, dbName);
 
-  return createStreamResponse(async (streamHandler, streamCallbacks) => {
-    await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, streamCallbacks);
-  }, true);
+  let streamLogic = async function (streamHandler, streamCallbacks) {
+    await rag.queryStreaming(input, annotation, model, instructions, schema, generate || null, expectedResults || null, streamCallbacks);
+  }
+
+  return createStreamResponse(streamLogic, true);
 }

@@ -49,6 +49,8 @@ export const useQueryState = (appName, modelOptions) => {
     const [addedQueriesData, setAddedQueriesData] = useState([]);
     const [queryEvaluation, setQueryEvaluation] = useState('');
     const [queryEvaluationReason, setQueryEvaluationReason] = useState('');
+    const [deepSearch, setDeepSearch] = useState(false);
+    const [expectedResults, setExpectedResults] = useState('');
 
     const dbQueryTextAreaRef = useRef(null);
     const router = useRouter();
@@ -156,7 +158,7 @@ export const useQueryState = (appName, modelOptions) => {
         // The focus will be set automatically due to the useEffect in QueryInput
     };
 
-    const handleQuery = async (requery) => {
+    const handleQuery = async () => {
         if (userQuery || addedQueries.length > 0) {
             resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
             setLoading(true);
@@ -176,8 +178,9 @@ export const useQueryState = (appName, modelOptions) => {
                         _instructions,
                         dataSchema,
                         dataExplanation,
-                        requery,
-                        dataChunkHandler // Use the created handler here
+                        deepSearch, // Use deepSearch here instead of a parameter
+                        expectedResults,
+                        dataChunkHandler
                     )
                 ));
 
@@ -693,6 +696,10 @@ export const useQueryState = (appName, modelOptions) => {
         queryEvaluation,
         queryEvaluationReason,
         handleGenerateQuery,
-        setAnnotation
+        setAnnotation,
+        deepSearch,
+        setDeepSearch,
+        expectedResults,
+        setExpectedResults,
     };
 };

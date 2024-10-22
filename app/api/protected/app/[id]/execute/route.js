@@ -14,8 +14,6 @@ export async function POST(request, { params }) {
 
   let { dbName, user: email } = utils.getShared(id) || { dbName: id, user: session.user.email };
 
-
-  //const result = await mongo.execute(JSON.parse(input), dbName);
   try {
     const result = db.query(email, dbName, input);
     console.log("count: " + result.length);

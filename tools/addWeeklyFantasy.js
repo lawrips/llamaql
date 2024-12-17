@@ -2,13 +2,14 @@ const fs = require('fs').promises;
 const path = require('path');
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const readline = require('readline');
 
 // User-specified constants
 const SOURCE_DIR = '/users/lawri/Downloads/nfl';
-const WEEK_NUMBER = 6;
 
 class FantasyFootballStatsProcessor {
-    constructor() {
+    constructor(weekNumber) {
+        this.weekNumber = weekNumber;
         this.destDir = SOURCE_DIR;
         this.playerTypes = {
           QB: '*_Fantasy_Football_Statistics_QB*.csv',
@@ -55,11 +56,60 @@ class FantasyFootballStatsProcessor {
 
   async processFile(playerType, sourceFile) {
     const destFile = path.join(this.destDir, this.destFiles[playerType]);
-    const existingData = await this.readExistingData(destFile);
-    const newData = await this.readSourceFile(sourceFile, playerType);
+    
+    // Read the entire existing file content first
+    let existingContent = '';
+    let headers = [];
+    try {
+      existingContent = await fs.readFile(destFile, 'utf8');
+      headers = existingContent.split('\n')[0].split(',').map(h => h.trim());
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
 
-    const updatedData = this.mergeData(existingData, newData);
-    await this.writeData(destFile, updatedData, playerType);
+    // Read and process new data
+    const newData = await this.readSourceFile(sourceFile, playerType);
+    
+    // If we have existing content, append new data while preserving format
+    if (existingContent) {
+      const existingLines = existingContent.split('\n');
+      const headerLine = existingLines[0];
+      const dataLines = existingLines.slice(1).filter(line => line.trim());
+      
+      // Process new data while preserving all columns
+      const processedNewData = newData.map(row => {
+        const newRow = {};
+        headers.forEach(header => {
+          newRow[header] = row[header] || '';
+        });
+        return newRow;
+      });
+
+      // Write back all data
+      const csvWriter = createCsvWriter({
+        path: destFile,
+        header: headers.map(header => ({ id: header, title: header })),
+        append: false
+      });
+
+      // Combine existing data (parsed) with new data
+      const existingData = dataLines
+        .filter(line => line.trim())
+        .map(line => {
+          const values = line.split(',');
+          return headers.reduce((obj, header, index) => {
+            obj[header] = values[index] || '';
+            return obj;
+          }, {});
+        });
+
+      await csvWriter.writeRecords([...existingData, ...processedNewData]);
+    } else {
+      // If no existing file, proceed with original logic
+      await this.writeData(destFile, newData, playerType);
+    }
   }
 
   async readExistingData(destFile) {
@@ -169,7 +219,7 @@ class FantasyFootballStatsProcessor {
 
 
   processRow(playerType, row) {
-    const processedRow = { Week: WEEK_NUMBER.toString() };
+    const processedRow = { Week: this.weekNumber.toString() };
     const headerMapping = this.getHeaderMapping(playerType);
 
     for (const [destHeader, sourceHeader] of Object.entries(headerMapping)) {
@@ -230,7 +280,18 @@ class FantasyFootballStatsProcessor {
 }
 
 async function main() {
-  const processor = new FantasyFootballStatsProcessor();
+  const weekNumber = await new Promise(resolve => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    rl.question('Enter the week number: ', answer => {
+      rl.close();
+      resolve(parseInt(answer));
+    });
+  });
+  
+  const processor = new FantasyFootballStatsProcessor(weekNumber);
   await processor.processFiles();
   console.log('Processing complete!');
 }

@@ -20,7 +20,7 @@ const modelOptions = [
     { header: 'Cheaper and Faster', selectable: false },
     { value: 'google/gemini-flash-1.5', display: 'Gemini 1.5 Flash', selectable: true },
     { value: 'openai/gpt-4o-mini', display: 'GPT-4o Mini', selectable: true },
-    { value: 'anthropic/claude-3-haiku', display: 'Claude 3 Haiku', selectable: true },
+    { value: 'anthropic/claude-3-5-haiku', display: 'Claude 3.5 Haiku', selectable: true },
     { header: 'More Expensive and Slower', selectable: false },
     { value: 'anthropic/claude-3.5-sonnet:beta', display: 'Claude 3.5 Sonnet', selectable: true },
     { value: 'openai/gpt-4o-2024-08-06', display: 'GPT-4o', selectable: true },
@@ -36,8 +36,9 @@ export default function HomeClient({ appName }) {
         setUserChat,
         annotation,
         setAnnotation,
-        dbQuery,
+        displayedQuery,
         setDbQuery,
+        setDisplayedQuery, 
         translatedResult,
         chartData,
         chartTicks,
@@ -98,7 +99,7 @@ export default function HomeClient({ appName }) {
         handleRemoveQuery,
         addedQueries,
         queryButtonText,
-        dbQueryTextAreaRef,
+        queryTextAreaRef,
         handleModelSelect,
         queryEvaluation,
         queryEvaluationReason,
@@ -107,6 +108,8 @@ export default function HomeClient({ appName }) {
         setDeepSearch,
         expectedResults,
         setExpectedResults,
+        showQueryDetails,
+        setShowQueryDetails,
     } = useQueryState(appName, modelOptions);
 
     const [visibleTooltip, setVisibleTooltip] = useState(null);
@@ -171,7 +174,8 @@ export default function HomeClient({ appName }) {
             </div>
 
             <InstructionPanel
-                dbQuery={dbQuery}
+                displayedQuery={displayedQuery}
+                setDisplayedQuery={setDisplayedQuery}
                 setDbQuery={setDbQuery}
                 queryInstructions={queryInstructions}
                 setQueryInstructions={setQueryInstructions}
@@ -190,7 +194,9 @@ export default function HomeClient({ appName }) {
                 handleInstructSubChange={handleInstructSubChange}
                 handleDirectQuery={handleDirectQuery}
                 handleSaveInstructions={handleSaveInstructions}
-                dbQueryTextAreaRef={dbQueryTextAreaRef}
+                queryTextAreaRef={queryTextAreaRef}
+                showQueryDetails={showQueryDetails}
+                setShowQueryDetails={setShowQueryDetails}
             />
 
             <ResultPanel

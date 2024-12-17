@@ -17,7 +17,9 @@ export const useQueryState = (appName, modelOptions) => {
     const [userQuery, setUserQuery] = useState('');
     const [userChat, setUserChat] = useState('');
     const [annotation, setAnnotation] = useState('');
+    const [unparsedQuery, setUnparsedQuery] = useState('');
     const [dbQuery, setDbQuery] = useState('');
+    const [displayedQuery, setDisplayedQuery] = useState('');
     const [dbResult, setDbResult] = useState([]);
     const [translatedResult, setTranslatedResult] = useState('');
     const [chartData, setChartData] = useState([]);
@@ -51,8 +53,9 @@ export const useQueryState = (appName, modelOptions) => {
     const [queryEvaluationReason, setQueryEvaluationReason] = useState('');
     const [deepSearch, setDeepSearch] = useState(false);
     const [expectedResults, setExpectedResults] = useState('');
+    const [showQueryDetails, setShowQueryDetails] = useState(false);
 
-    const dbQueryTextAreaRef = useRef(null);
+    const queryTextAreaRef = useRef(null);
     const router = useRouter();
 
 
@@ -102,10 +105,10 @@ export const useQueryState = (appName, modelOptions) => {
     }, [appName]);
 
     useEffect(() => {
-        if (dbQueryTextAreaRef.current) {
-            dbQueryTextAreaRef.current.scrollTop = dbQueryTextAreaRef.current.scrollHeight;
+        if (queryTextAreaRef.current) {
+            queryTextAreaRef.current.scrollTop = queryTextAreaRef.current.scrollHeight;
         }
-    }, [dbQuery]);
+    }, [displayedQuery]);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
@@ -140,7 +143,7 @@ export const useQueryState = (appName, modelOptions) => {
     };
 
     const handleGenerateQuery = async () => {
-        resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
+        resetQueryState(setDisplayedQuery, setDbQuery, setUnparsedQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
         setLoading(true);
         console.log('generating query')
         let res = await fetch(`/api/protected/app/${appName}/generate-query`, {
@@ -160,14 +163,14 @@ export const useQueryState = (appName, modelOptions) => {
 
     const handleQuery = async () => {
         if (userQuery || addedQueries.length > 0) {
-            resetQueryState(setDbQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
+            resetQueryState(setDisplayedQuery, setDbQuery, setUnparsedQuery, setDbResult, setTranslatedResult, setUserChat, setQueryEvaluation, setQueryEvaluationReason);
             setLoading(true);
 
             try {
                 let _instructions = getInstructions(queryInstructions, instructSubs, checkedItems);
                 const queries = addedQueries.length > 0 ? addedQueries : [{ query: userQuery, annotation }];
 
-                const dataChunkHandler = createDataChunkHandler(setDbQuery);
+                const dataChunkHandler = createDataChunkHandler(setDisplayedQuery);
 
                 const results = await Promise.all(queries.map(query =>
                     executeNLQuery(
@@ -190,10 +193,13 @@ export const useQueryState = (appName, modelOptions) => {
                 setLoading(false);
 
                 if (results && results.length > 0) {
-                    // Set the last result to dbResult and dbQuery
+                    // Set the last result to dbResult and queries
                     const lastResult = results[results.length - 1];
                     setDbResult(lastResult.data || []);
+                    //setDbQuery(lastResult.chat.replaceAll("\\n", "\n") || '');
+                    setUnparsedQuery(lastResult.unparsedQuery.replaceAll("\\n", "\n") || '');
                     setDbQuery(lastResult.query || '');
+                    setDisplayedQuery(lastResult.query || '');
                     setQueryEvaluation(lastResult.evaluation.type || 'new_class');
                     setQueryEvaluationReason(lastResult.evaluation.reason || '');
                     console.log('queryEvaluationReason', queryEvaluationReason)
@@ -206,13 +212,11 @@ export const useQueryState = (appName, modelOptions) => {
                     // Single call to handleTranslation with all results
                     await handleTranslation(
                         allData,
-                        null,
                         allQueries,
                         allAnnotations, // Using the first annotation, adjust if needed
                         selectedModel,
                         appName,
                         _instructions,
-                        setDbQuery,
                         setDbResult,
                         setTranslatedResult
                     );
@@ -326,7 +330,8 @@ export const useQueryState = (appName, modelOptions) => {
             setTranslatedResult('')
             setAnnotation(matchedQuery.userAnnotation || '');
             setDbQuery(matchedQuery.dbQuery);
-            //setFocusedInput(null);
+            setUnparsedQuery(matchedQuery.dbQuery);
+            setDisplayedQuery(matchedQuery.dbQuery);
 
             if (matchedQuery.dbResult) {
                 setTranslatedResult(matchedQuery.dbResult);
@@ -495,6 +500,7 @@ export const useQueryState = (appName, modelOptions) => {
         fileInputRef.current.click();  // Trigger the file input click
     };
 
+    // for importing jsonl files
     const handleFileChange = (event) => {
         const file = event.target.files[0]; // Access the uploaded file
 
@@ -540,14 +546,15 @@ export const useQueryState = (appName, modelOptions) => {
         setDialogOpen(true);
     };
 
+    /// function for creating a table
     const handleOpenCreateDialog = async () => {
-        if (dbQuery) {
+        if (displayedQuery && dbQuery) {
             setLoading(true);
             try {
                 const queryData = await executeDirectQuery(selectedModel, appName, dbQuery);
                 console.log(queryData)
                 if (!queryData.error) {
-                    setDbQuery(queryData.query);
+                    //setDbQuery(queryData.query);
                     console.log("count: " + queryData.data?.length);
                     setCreateTableCount(queryData.data?.length);
                     setIsCreateModalOpen(true);
@@ -619,6 +626,18 @@ export const useQueryState = (appName, modelOptions) => {
         return baseStyle;
     };
 
+    const handleQueryDetailsChange = (checked) => {
+        setShowQueryDetails(checked);
+        console.log('parsedQuery:', dbQuery);
+        console.log('unparsedQuery:', unparsedQuery);
+
+        if (checked && unparsedQuery) {
+            setDisplayedQuery(unparsedQuery);
+        }
+        else {
+            setDisplayedQuery(dbQuery);
+        }
+    };
 
     return {
         userQuery,
@@ -627,7 +646,8 @@ export const useQueryState = (appName, modelOptions) => {
         setUserChat,
         annotation,
         setAnnotation,
-        dbQuery,
+        displayedQuery,
+        setDisplayedQuery,
         setDbQuery,
         translatedResult,
         chartData,
@@ -691,7 +711,7 @@ export const useQueryState = (appName, modelOptions) => {
         handleRemoveQuery,
         addedQueries,
         queryButtonText,
-        dbQueryTextAreaRef,
+        queryTextAreaRef,
         handleModelSelect,
         queryEvaluation,
         queryEvaluationReason,
@@ -701,5 +721,7 @@ export const useQueryState = (appName, modelOptions) => {
         setDeepSearch,
         expectedResults,
         setExpectedResults,
+        showQueryDetails,
+        setShowQueryDetails: handleQueryDetailsChange,
     };
 };

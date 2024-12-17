@@ -4,11 +4,11 @@ import { useSession } from "next-auth/react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { Play } from "lucide-react";
-
+import Switch from 'react-switch';
 
 const InstructionPanel = ({
-  dbQuery,
-  setDbQuery,
+  displayedQuery,
+  setDisplayedQuery,
   queryInstructions,
   setQueryInstructions,
   requeryInstructions,
@@ -23,7 +23,10 @@ const InstructionPanel = ({
   handleInstructSubChange,
   handleDirectQuery,
   handleSaveInstructions,
-  dbQueryTextAreaRef
+  queryTextAreaRef,
+  showQueryDetails,
+  setShowQueryDetails,
+  setDbQuery,
 }) => {
   const { data: session } = useSession(); // Get session data
   const [isOpen, setIsOpen] = useState(session.user.role == 'admin' ? true : false);
@@ -56,17 +59,53 @@ const InstructionPanel = ({
         {isOpen && (
           <div className="content">
             <TabPanel>
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <textarea
-                  ref={dbQueryTextAreaRef}
-                  value={dbQuery}
-                  placeholder="SQL Query Will Appear Here"
-                  onChange={(e) => setDbQuery(e.target.value)}
-                  rows={8}
-                  style={{   border: '1px solid #ddd', padding: '5px', width: '95%', overflowY: 'scroll', marginBottom: '10px', whiteSpace: 'pre-wrap' }}
-                />&nbsp;&nbsp;
-                <button className="flex items-center" onClick={handleDirectQuery} style={{ marginRight: '10px', marginBottom: '10px' }}>
-                <Play className="h-4 w-4" />&nbsp;Execute</button>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                  <textarea
+                    ref={queryTextAreaRef}
+                    value={displayedQuery}
+                    placeholder="SQL Query Will Appear Here"
+                    onChange={(e) => { 
+                      if (!showQueryDetails) {  // Only allow changes when showQueryDetails is false
+                        setDisplayedQuery(e.target.value); 
+                        setDbQuery(e.target.value);
+                      }
+                    }}
+                    readOnly={showQueryDetails}  // Make readonly when showQueryDetails is true
+                    rows={8}
+                    style={{ 
+                      border: '1px solid #ddd', 
+                      padding: '5px', 
+                      width: '95%', 
+                      overflowY: 'scroll', 
+                      marginBottom: '10px', 
+                      whiteSpace: 'pre-wrap',
+                      backgroundColor: showQueryDetails ? '#f5f5f5' : 'white'  // Optional: visual feedback for readonly state
+                    }}
+                  />&nbsp;&nbsp;
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className="flex items-center mb-2">
+                      <span className="mr-2 text-sm">Show Query Details</span>
+                      <Switch
+                        checked={showQueryDetails}
+                        onChange={(checked) => setShowQueryDetails(checked)}
+                        onColor="#86d3ff"
+                        onHandleColor="#2693e6"
+                        handleDiameter={20}
+                        uncheckedIcon={false}
+                        checkedIcon={false}
+                        boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+                        activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)"
+                        height={15}
+                        width={35}
+                        className="react-switch"
+                      />
+                    </div>
+                    <button className="flex items-center" onClick={handleDirectQuery}>
+                      <Play className="h-4 w-4" />&nbsp;Execute
+                    </button>
+                  </div>
+                </div>
               </div>
             </TabPanel>
             {(session.user?.role == 'admin') ?

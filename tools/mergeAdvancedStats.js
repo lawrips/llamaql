@@ -2,101 +2,141 @@ const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const readline = require('readline');
 
 const SOURCE_DIR = 'C:\\Users\\lawri\\Downloads\\nfl';
 const DEST_DIR = 'C:\\Users\\lawri\\Downloads\\nfl';
 
 const positions = ['QB', 'RB', 'TE', 'WR'];
 
-function processFiles(position) {
+// Create readline interface
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+// Promisify the question method
+const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
+
+async function processFiles(position, weekNumber) {
     console.log(`Processing ${position}...`);
 
-    const sourceFile = path.join(SOURCE_DIR, `adv_2024_weekly_${position}.csv`);
+    const sourceFiles = fs.readdirSync(SOURCE_DIR);
+    const sourceFile = path.join(SOURCE_DIR, 
+        sourceFiles.find(f => f.includes(`Advanced_Stats_Report_${position}`)));
     const destFile = path.join(DEST_DIR, `2024_weekly_${position}.csv`);
 
     const sourceData = {};
     let destData = [];
     const unmatched = new Set();
     const partialMatches = new Set();
+    let headers = [];
 
     // Read source file
-    fs.createReadStream(sourceFile)
-        .pipe(csv())
-        .on('data', (row) => {
-            const key = `${row.Player}_${row.G}`;
-            sourceData[key] = Object.entries(row).reduce((acc, [key, value]) => {
-                if (key !== 'Player' && key !== 'G') {
-                    acc[`ADV_${key}`] = value;
+    await new Promise((resolve, reject) => {
+        let yaconCount = 0; // Counter for YACON headers
+        fs.createReadStream(sourceFile)
+            .pipe(csv({
+                mapHeaders: ({ header }) => {
+                    if (header === 'YACON') {
+                        yaconCount++;
+                        return position === 'RB' ? 
+                            (yaconCount === 1 ? 'ADV_RUSH_YACON' : 'ADV_REC_YACON') : 
+                            'ADV_REC_YACON';
+                    }
+                    return header;
                 }
-                return acc;
-            }, {});
-        })
-        .on('end', () => {
-            // Read destination file
-            let headers = [];
-            let rostIndex = -1;
-            fs.createReadStream(destFile)
-                .pipe(csv())
-                .on('headers', (headerRow) => {
-                    headers = headerRow;
-                    rostIndex = headers.indexOf('ROST');
-                })
-                .on('data', (row) => {
-                    // Only process rows up to the ROST column
-                    const processedRow = {};
-                    for (let i = 0; i <= rostIndex; i++) {
-                        processedRow[headers[i]] = row[headers[i]];
+            }))
+            .on('data', (row) => {
+                const key = `${row.Player}`;
+                const transformedRow = {};
+                Object.entries(row).forEach(([header, value]) => {
+                    if (header !== 'Rank' && header !== 'G') {
+                        transformedRow[header.startsWith('ADV_') ? header : `ADV_${header}`] = value;
                     }
-
-                    const key = `${processedRow.Player}_${processedRow.Week}`;
-                    if (sourceData[key]) {
-                        destData.push({ ...processedRow, ...sourceData[key] });
-                        delete sourceData[key];
-                    } else {
-                        // Try partial match on player name without team
-                        const playerName = processedRow.Player.split(' (')[0];
-                        const partialMatchKey = Object.keys(sourceData).find(k => 
-                            k.startsWith(playerName) && k.endsWith(`_${processedRow.Week}`)
-                        );
-                        if (partialMatchKey) {
-                            destData.push({ ...processedRow, ...sourceData[partialMatchKey] });
-                            partialMatches.add(processedRow.Player);
-                            delete sourceData[partialMatchKey];
-                        } else {
-                            destData.push(processedRow);
-                        }
-                    }
-                })
-                .on('end', () => {
-                    // Remaining entries in sourceData are unmatched
-                    Object.keys(sourceData).forEach(key => unmatched.add(key.split('_')[0]));
-
-                    // Write output file (overwrite the original weekly file)
-                    let outputHeaders = headers.slice(0, rostIndex + 1);
-                    if (Object.keys(sourceData).length > 0) {
-                        outputHeaders = [
-                            ...outputHeaders,
-                            ...Object.keys(sourceData[Object.keys(sourceData)[0]])
-                                .filter(header => header !== 'ADV_Player' && header !== 'ADV_G')
-                        ];
-                    }
-
-                    const csvWriter = createCsvWriter({
-                        path: destFile,
-                        header: outputHeaders.map(header => ({ id: header, title: header }))
-                    });
-
-                    csvWriter.writeRecords(destData)
-                        .then(() => {
-                            console.log(`${position}: ${destData.length} players processed and written to ${destFile}`);
-                            console.log(`Partial matches: ${partialMatches.size}`);
-                            console.log(`Partial matched players: ${Array.from(partialMatches).join(', ')}`);
-                            console.log(`Total unmatched: ${unmatched.size}`);
-                            console.log(`Unmatched players: ${Array.from(unmatched).join(', ')}`);
-                        });
                 });
-        });
+                sourceData[key] = transformedRow;
+            })
+            .on('end', resolve)
+            .on('error', reject);
+    });
+
+    // Read destination file
+    let destHeaders = [];
+    const destRows = [];
+    await new Promise((resolve, reject) => {
+        fs.createReadStream(destFile)
+            .pipe(csv())
+            .on('headers', (headers) => {
+                destHeaders = headers;
+            })
+            .on('data', (row) => {
+                destRows.push(row);
+            })
+            .on('end', resolve)
+            .on('error', reject);
+    });
+
+    // Process and merge data
+    destData = destRows.map(row => {
+        if (row.Week === weekNumber.toString()) {
+            const playerName = row.Player.split(' (')[0];
+            if (sourceData[playerName]) {
+                const mergedRow = { ...row, ...sourceData[playerName] };
+                delete sourceData[playerName];
+                return mergedRow;
+            } else {
+                const partialMatchKey = Object.keys(sourceData).find(k => 
+                    k.startsWith(playerName)
+                );
+                if (partialMatchKey) {
+                    partialMatches.add(row.Player);
+                    const mergedRow = { ...row, ...sourceData[partialMatchKey] };
+                    delete sourceData[partialMatchKey];
+                    return mergedRow;
+                }
+                unmatched.add(row.Player);
+            }
+        }
+        return row;
+    });
+
+    // Get all unique headers
+    const allHeaders = Array.from(new Set([
+        ...destHeaders,
+        ...Object.values(sourceData).flatMap(obj => Object.keys(obj))
+    ]));
+
+    // Write the output
+    const csvWriter = createCsvWriter({
+        path: destFile,
+        header: allHeaders.map(header => ({ id: header, title: header }))
+    });
+
+    await csvWriter.writeRecords(destData);
+    
+    console.log(`${position}: ${destData.length} records processed and written to ${destFile}`);
+    console.log(`Partial matches: ${partialMatches.size}`);
+    console.log(`Partial matched players: ${Array.from(partialMatches).join(', ')}`);
+    console.log(`Total unmatched: ${unmatched.size}`);
+    console.log(`Unmatched players: ${Array.from(unmatched).join(', ')}`);
 }
 
 // Main execution
-positions.forEach(processFiles);
+async function main() {
+    try {
+        const weekNumber = await askQuestion('Enter the week number to process: ');
+        
+        // Process each position sequentially
+        for (const position of positions) {
+            await processFiles(position, weekNumber);
+        }
+        
+        rl.close();
+    } catch (error) {
+        console.error('Error:', error);
+        rl.close();
+    }
+}
+
+main();

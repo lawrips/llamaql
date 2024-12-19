@@ -41,7 +41,7 @@ const DragAndDrop = ({ onFileRead }) => {
     <div
       onDrop={handleDrop}
       onDragOver={handleDragOver}
-      //onClick={handleClick} // Opens the file dialog when clicked
+      onClick={handleClick}
       className="border-2 border-dashed border-gray-400 rounded-lg p-5 text-center m-5 transition-colors duration-300 ease-in-out hover:border-indigo-500"
       style={{
         border: '2px dashed #ccc',
@@ -55,6 +55,7 @@ const DragAndDrop = ({ onFileRead }) => {
       <form onSubmit={handleUpload}>
 
         <input
+          ref={fileInputRef}
           type="file"
           style={{ display: 'none' }} // Hidden file input
           onChange={handleFileChange}

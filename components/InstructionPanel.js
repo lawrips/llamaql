@@ -29,7 +29,7 @@ const InstructionPanel = ({
   setDbQuery,
 }) => {
   const { data: session } = useSession(); // Get session data
-  const [isOpen, setIsOpen] = useState(session.user.role == 'admin' ? true : false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleContent = () => {
     setIsOpen(!isOpen);

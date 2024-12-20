@@ -53,13 +53,12 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
                         setFocusedInput('query');
                     }}
                     onBlur={() => {
-                        // Add a small delay to allow click events on dropdown to fire first
                         setTimeout(() => {
                             if (!dropdownRef.current?.contains(document.activeElement)) {
                                 setShowDropdown(false);
                                 setFocusedInput(null);
                             }
-                        }, 100);
+                        }, 200);
                     }}
                     onKeyDown={handleKeyDown}
                 />
@@ -104,11 +103,10 @@ const QueryInput = ({ userQuery, setUserQuery, setAnnotation, queryOptions, hand
                             <div
                                 className="relative flex items-center p-2 hover:bg-gray-100 cursor-pointer"
                                 key={index}
-                                onClick={(e) => {
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
                                     handleOptionSelect(e, option);
                                     setShowDropdown(false);
-                                    // Prevent immediate re-focus on input
-                                    e.preventDefault();
                                     inputRef.current.blur();
                                 }}
                             >

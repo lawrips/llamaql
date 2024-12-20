@@ -40,7 +40,7 @@ const InstructionPanel = ({
       <Tabs>
         <div className="tab-container">
           <TabList>
-            <Tab>Parsed Query</Tab>
+            <Tab>SQL Query</Tab>
             {(session.user?.role == 'admin') ?
               <>
                 <Tab>Query Instructions</Tab>

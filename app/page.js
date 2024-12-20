@@ -42,67 +42,80 @@ function UploadPage() {
 
     setLoading(true);
     setShowOverlay(true);
-    setStatusMessages(['Initializing...']);
+    setStatusMessages(['Starting upload...']);
+
+    // Increase retry limits and add backoff
+    const maxRetries = 5;  // Increased from 3
+    const baseDelay = 2000; // 2 seconds base delay
 
     try {
-      // Add timeout and keepalive settings
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
-
       const response = await fetch(`/api/protected/app/${appName}/upload`, {
         method: 'POST',
         body: formData,
-        signal: controller.signal,
-        keepalive: true,
-        cache: 'no-cache',
         headers: {
-          'Connection': 'keep-alive'
-        }
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
       });
 
-      clearTimeout(timeoutId);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`File upload failed: ${response.status} ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let retryCount = 0;
-      const maxRetries = 3;
+      let buffer = '';
+      let lastMessageTime = Date.now();
 
       while (true) {
         try {
           const { done, value } = await reader.read();
-          if (done) break;
+          
+          // Update last successful message time
+          lastMessageTime = Date.now();
 
-          const chunk = decoder.decode(value);
-          console.log('Received chunk:', chunk); // Debug log
+          if (done) {
+            console.log('Stream complete');
+            break;
+          }
 
-          const messages = chunk.split('\n\n').filter(Boolean);
-          messages.forEach(message => {
-            if (message.startsWith('data: ')) {
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+
+          for (const part of parts) {
+            if (part.trim() && part.startsWith('data: ')) {
               try {
-                const data = JSON.parse(message.slice(6));
+                const data = JSON.parse(part.slice(6));
                 setStatusMessages(prev => [...prev, data.status]);
+                retryCount = 0; // Reset retry count on successful message
               } catch (parseError) {
-                console.error('Failed to parse message:', message, parseError);
+                console.warn('Failed to parse message:', part, parseError);
               }
             }
-          });
+          }
 
         } catch (streamError) {
-          console.error('Stream error:', streamError);
+          console.warn('Stream error:', streamError);
           retryCount++;
           
-          if (retryCount >= maxRetries) {
-            throw new Error('Failed to maintain connection after multiple retries');
-          }
+          // Calculate exponential backoff delay
+          const delay = Math.min(baseDelay * Math.pow(2, retryCount - 1), 10000);
           
-          // Add a small delay before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          setStatusMessages(prev => [...prev, `Reconnecting... (Attempt ${retryCount})`]);
+          if (retryCount >= maxRetries) {
+            throw new Error('Upload process interrupted. Please try again.');
+          }
+
+          // Check if we've received any messages in the last 30 seconds
+          const currentTime = Date.now();
+          const timeSinceLastMessage = currentTime - lastMessageTime;
+          if (timeSinceLastMessage > 30000) {
+            throw new Error('Upload process interrupted. Please try again.');
+          }
+
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
 

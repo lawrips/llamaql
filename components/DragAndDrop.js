@@ -65,6 +65,7 @@ const DragAndDrop = ({ onFileRead }) => {
           <div className="space-y-4">
             <p className="text-gray-700">File: {file.name}</p>
             <button
+              onClick={(e) => e.stopPropagation()}
               type="submit" // Upload the file
               className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-300 ease-in-out"
             >
